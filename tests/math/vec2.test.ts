@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Vec2, add, sub, scale, length, normalize, dot, crossZ, distance, fromYaw, rotate } from '../../src/math/vec2';
+import { add, sub, scale, length, normalize, dot, crossZ, distance, fromYaw, rotate } from '../../src/math/vec2';
 
 describe('Vec2', () => {
   it('add() returns componentwise sum', () => {
