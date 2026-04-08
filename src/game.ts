@@ -10,6 +10,7 @@ import { Sword } from './weapons/sword';
 import { Bow } from './weapons/bow';
 import { Bombs } from './weapons/bombs';
 import { FireRod } from './weapons/fire-rod';
+import { Bomb, FireBolt } from './entities/projectile';
 import { Input } from './input';
 import { Hud } from './hud/hud';
 import { Level, LevelJson } from './level/level';
@@ -117,6 +118,7 @@ export class Game {
     this.dead = false;
     this.won = false;
     this.hud.hideDied();
+    this.hud.hideWon();
   }
 
   private tick(now: number): void {
@@ -135,7 +137,27 @@ export class Game {
     this.handleInput(dt);
     this.updateEntities(dt);
     this.handleCollisions();
+
+    // Detect bomb detonation by checking for newly-dead bombs
+    const bombsToDetonate = this.world.entities.filter((e) => e instanceof Bomb && !e.alive);
+    let needMeshRebuild = false;
+    for (const _b of bombsToDetonate) {
+      needMeshRebuild = true;
+      break;
+    }
+
     this.world.removeDead();
+
+    if (needMeshRebuild && this.levelMesh) {
+      this.renderer.scene.remove(this.levelMesh.walls);
+      this.renderer.scene.remove(this.levelMesh.floor);
+      this.renderer.scene.remove(this.levelMesh.ceiling);
+      this.levelMesh = buildLevelMesh(this.level, this.dungeonTexture, this.tileAtlas);
+      this.renderer.scene.add(this.levelMesh.walls);
+      this.renderer.scene.add(this.levelMesh.floor);
+      this.renderer.scene.add(this.levelMesh.ceiling);
+    }
+
     this.billboards.removeDead();
     this.projectileRenderer.sync(this.world);
     this.checkWinLose();
@@ -207,8 +229,30 @@ export class Game {
   private handleCollisions(): void {
     for (const e of this.world.entities) {
       if (e instanceof Pickup && aabbOverlaps(e.getAABB(), this.player.getAABB())) {
+        const pickupType = e.pickupType;
         e.onTouch(this.player);
-        playSound('pickup_heart');
+        if (pickupType === 'small_key') {
+          playSound('pickup_key');
+        } else if (pickupType === 'magic_jar') {
+          playSound('pickup_magic');
+        } else if (pickupType.startsWith('weapon_')) {
+          playSound('pickup_weapon');
+        } else {
+          playSound('pickup_heart');
+        }
+      }
+    }
+
+    // FireBolt vs Enemy collision
+    const FireBoltCtor = FireBolt;
+    for (const e of this.world.entities) {
+      if (!(e instanceof FireBoltCtor)) continue;
+      for (const target of this.world.entities) {
+        if (target instanceof Enemy && aabbOverlaps(e.getAABB(), target.getAABB())) {
+          target.takeDamage(e.damage);
+          e.alive = false;
+          break;
+        }
       }
     }
   }
@@ -225,6 +269,7 @@ export class Game {
     const cz = Math.floor(this.player.position.z / cs);
     if (this.world.grid.get(cx, cz) === Cell.Exit) {
       this.won = true;
+      this.hud.showWon(() => this.loadLevel());
     }
   }
 

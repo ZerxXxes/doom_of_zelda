@@ -20,6 +20,7 @@ export class Hud {
   private lockedFlashEl: HTMLElement;
   private vignetteEl: HTMLElement;
   private diedEl: HTMLElement | null = null;
+  private wonEl: HTMLElement | null = null;
   private lockedFlashTimer = 0;
 
   constructor() {
@@ -111,6 +112,28 @@ export class Hud {
     if (this.diedEl) {
       this.diedEl.remove();
       this.diedEl = null;
+    }
+  }
+
+  showWon(onRestart: () => void): void {
+    if (this.wonEl) return;
+    this.wonEl = el('div', 'hud-died'); // reuse the same overlay style
+    const label = el('div', undefined, 'YOU WIN');
+    label.style.color = '#ffd700'; // gold instead of red
+    const btn = el('button', undefined, 'PLAY AGAIN') as HTMLButtonElement;
+    btn.addEventListener('click', () => {
+      onRestart();
+      this.hideWon();
+    });
+    this.wonEl.appendChild(label);
+    this.wonEl.appendChild(btn);
+    this.root.appendChild(this.wonEl);
+  }
+
+  hideWon(): void {
+    if (this.wonEl) {
+      this.wonEl.remove();
+      this.wonEl = null;
     }
   }
 
