@@ -166,12 +166,12 @@ export class Game {
 
   private handleInput(dt: number): void {
     const md = this.input.consumeMouseDelta();
-    this.player.yaw += md.dx * MOUSE_SENSITIVITY;
+    this.player.yaw -= md.dx * MOUSE_SENSITIVITY;
     this.player.pitch -= md.dy * MOUSE_SENSITIVITY;
     this.player.pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, this.player.pitch));
 
     const forward = fromYaw(this.player.yaw);
-    const strafe = { x: -forward.z, z: forward.x };
+    const strafe = { x: forward.z, z: -forward.x };
     let mx = 0;
     let mz = 0;
     if (this.input.isDown('KeyW')) { mx += forward.x; mz += forward.z; }

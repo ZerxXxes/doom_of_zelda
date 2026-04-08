@@ -37,7 +37,7 @@ export class Renderer {
   setCamera(position: { x: number; z: number }, yaw: number, pitch: number, eyeHeight: number): void {
     this.camera.position.set(position.x, eyeHeight, position.z);
     this.camera.rotation.order = 'YXZ';
-    this.camera.rotation.y = -yaw + Math.PI / 2;
+    this.camera.rotation.y = -yaw - Math.PI / 2;
     this.camera.rotation.x = pitch;
     this.playerLight.position.copy(this.camera.position);
   }
