@@ -2,17 +2,27 @@ import * as THREE from 'three';
 import { Enemy, GreenKnight, BlueKnight, RedKnight, PurpleKnight } from '../entities/enemy';
 import { sub, dot, crossZ, normalize, fromYaw } from '../math/vec2';
 
+const FRONT_FRAME_FPS = 6;
+
 export interface KnightTextures {
-  front: THREE.Texture;
-  side: THREE.Texture;
+  /** Walking-animation frames shown when the camera is in front of the enemy. */
+  frontFrames: THREE.Texture[];
+  /** Side view, used when the camera is on the enemy's left side. */
+  sideLeft: THREE.Texture;
+  /** Side view, pre-flipped horizontally for the enemy's right side. */
+  sideRight: THREE.Texture;
+  /** Static back view. */
   back: THREE.Texture;
 }
+
+type Facing = 'front' | 'side-left' | 'side-right' | 'back';
 
 interface EnemyVisual {
   enemy: Enemy;
   sprite: THREE.Sprite;
-  // Track which texture is currently assigned so we only swap when facing changes
-  currentFacing: 'front' | 'side-left' | 'side-right' | 'back' | null;
+  animTime: number;
+  currentFacing: Facing | null;
+  currentFrameIndex: number;
 }
 
 export class BillboardManager {
@@ -27,7 +37,7 @@ export class BillboardManager {
 
   add(enemy: Enemy): void {
     const mat = new THREE.SpriteMaterial({
-      map: this.textures.front.clone(),
+      map: this.textures.frontFrames[0],
       transparent: true,
       depthTest: true,
       color: this.tintForTier(enemy),
@@ -35,16 +45,21 @@ export class BillboardManager {
     const sprite = new THREE.Sprite(mat);
     sprite.scale.set(1.4, 1.7, 1);
     this.scene.add(sprite);
-    this.visuals.push({ enemy, sprite, currentFacing: null });
+    this.visuals.push({
+      enemy,
+      sprite,
+      animTime: 0,
+      currentFacing: null,
+      currentFrameIndex: -1,
+    });
   }
 
   removeDead(): void {
     this.visuals = this.visuals.filter((v) => {
       if (!v.enemy.alive) {
         this.scene.remove(v.sprite);
-        if (v.sprite.material instanceof THREE.SpriteMaterial && v.sprite.material.map) {
-          v.sprite.material.map.dispose();
-        }
+        // Materials are per-sprite (different tints), so dispose them.
+        // Textures are shared with other enemies — DO NOT dispose them here.
         v.sprite.material.dispose();
         return false;
       }
@@ -52,16 +67,23 @@ export class BillboardManager {
     });
   }
 
-  update(_dt: number, camera: THREE.Camera): void {
+  update(dt: number, camera: THREE.Camera): void {
     const camPos = { x: camera.position.x, z: camera.position.z };
 
     for (const v of this.visuals) {
+      v.animTime += dt;
       v.sprite.position.set(v.enemy.position.x, 0.85, v.enemy.position.z);
 
       const facing = this.pickFacing(v.enemy, camPos);
-      if (facing !== v.currentFacing) {
-        this.applyFacing(v.sprite, facing);
+      const frameIndex =
+        facing === 'front'
+          ? Math.floor(v.animTime * FRONT_FRAME_FPS) % this.textures.frontFrames.length
+          : 0;
+
+      if (facing !== v.currentFacing || frameIndex !== v.currentFrameIndex) {
+        this.applyTexture(v.sprite, facing, frameIndex);
         v.currentFacing = facing;
+        v.currentFrameIndex = frameIndex;
       }
     }
   }
@@ -74,44 +96,32 @@ export class BillboardManager {
     return new THREE.Color(1, 1, 1);
   }
 
-  private pickFacing(enemy: Enemy, camPos: { x: number; z: number }): 'front' | 'side-left' | 'side-right' | 'back' {
+  private pickFacing(enemy: Enemy, camPos: { x: number; z: number }): Facing {
     const toCam = normalize(sub(camPos, enemy.position));
     const enemyForward = fromYaw(enemy.yaw);
     const d = dot(toCam, enemyForward);
     const c = crossZ(toCam, enemyForward);
-    // d > 0.5  => camera in front of enemy => front sprite
-    // d < -0.5 => camera behind enemy       => back sprite
-    // otherwise => side sprite (left or right depending on cross sign)
     if (d > 0.5) return 'front';
     if (d < -0.5) return 'back';
     return c > 0 ? 'side-left' : 'side-right';
   }
 
-  private applyFacing(sprite: THREE.Sprite, facing: 'front' | 'side-left' | 'side-right' | 'back'): void {
+  private applyTexture(sprite: THREE.Sprite, facing: Facing, frameIndex: number): void {
     const mat = sprite.material as THREE.SpriteMaterial;
-    if (mat.map) mat.map.dispose();
-
     let tex: THREE.Texture;
-    let flipped = false;
     switch (facing) {
       case 'front':
-        tex = this.textures.front.clone();
-        break;
-      case 'back':
-        tex = this.textures.back.clone();
+        tex = this.textures.frontFrames[frameIndex];
         break;
       case 'side-left':
-        tex = this.textures.side.clone();
+        tex = this.textures.sideLeft;
         break;
       case 'side-right':
-        tex = this.textures.side.clone();
-        flipped = true;
+        tex = this.textures.sideRight;
         break;
-    }
-    tex.needsUpdate = true;
-    if (flipped) {
-      tex.repeat.x = -1;
-      tex.offset.x = 1;
+      case 'back':
+        tex = this.textures.back;
+        break;
     }
     mat.map = tex;
     mat.needsUpdate = true;

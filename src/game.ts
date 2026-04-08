@@ -59,12 +59,27 @@ export class Game {
 
   async start(): Promise<void> {
     this.dungeonTexture = await loadTexture('sprites/dungeon-tiles.png');
-    const [front, side, back] = await Promise.all([
-      loadTextureColorKeyed('sprites/blue_knight_front.png'),
+    const [f1, f2, f3, f4, side, back] = await Promise.all([
+      loadTextureColorKeyed('sprites/blue_knight_front_1.png'),
+      loadTextureColorKeyed('sprites/blue_knight_front_2.png'),
+      loadTextureColorKeyed('sprites/blue_knight_front_3.png'),
+      loadTextureColorKeyed('sprites/blue_knight_front_4.png'),
       loadTextureColorKeyed('sprites/blue_knight_side.png'),
       loadTextureColorKeyed('sprites/blue_knight_back.png'),
     ]);
-    this.knightTextures = { front, side, back };
+    // Pre-flip the right-side variant once. Cloning the side texture and setting
+    // repeat.x = -1 / offset.x = 1 mirrors it horizontally without affecting the
+    // original (which is used for the left side).
+    const sideRight = side.clone();
+    sideRight.repeat.x = -1;
+    sideRight.offset.x = 1;
+    sideRight.needsUpdate = true;
+    this.knightTextures = {
+      frontFrames: [f1, f2, f3, f4],
+      sideLeft: side,
+      sideRight,
+      back,
+    };
     this.loadLevel();
     requestAnimationFrame((t) => this.tick(t));
   }
