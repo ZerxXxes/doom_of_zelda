@@ -128,3 +128,44 @@ describe('Enemy tier tuning', () => {
     expect(new PurpleKnight({ x: 0, z: 0 }).hp).toBe(20);
   });
 });
+
+describe('RedKnight charge', () => {
+  it('moves in a straight line when charging', () => {
+    const g = buildGrid(['..........']);
+    const w = new World(g, 1);
+    const r = new RedKnight({ x: 1, z: 0.5 });
+    const p = new Player({ x: 5, z: 0.5 });
+    w.add(r);
+    w.add(p);
+    r.state = EnemyState.Chase;
+    r.startCharge(p);
+    const startX = r.position.x;
+    r.update(0.5, w);
+    expect(r.position.x).toBeGreaterThan(startX);
+  });
+});
+
+describe('PurpleKnight boss', () => {
+  it('summons minions at 50% hp', () => {
+    const g = buildGrid(['..........', '..........', '..........']);
+    const w = new World(g, 1);
+    const boss = new PurpleKnight({ x: 5, z: 1 });
+    const p = new Player({ x: 0, z: 0 });
+    w.add(boss);
+    w.add(p);
+    boss.takeDamage(10); // 50% hp
+    boss.maybeSummon(w);
+    expect(w.entities.filter((e) => e instanceof GreenKnight).length).toBe(2);
+  });
+
+  it('only summons once at 50% threshold', () => {
+    const g = buildGrid(['..........', '..........', '..........']);
+    const w = new World(g, 1);
+    const boss = new PurpleKnight({ x: 5, z: 1 });
+    w.add(boss);
+    boss.takeDamage(10);
+    boss.maybeSummon(w);
+    boss.maybeSummon(w);
+    expect(w.entities.filter((e) => e instanceof GreenKnight).length).toBe(2);
+  });
+});

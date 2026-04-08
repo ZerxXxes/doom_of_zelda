@@ -155,15 +155,84 @@ export class BlueKnight extends Enemy {
   }
 }
 
+const RED_CHARGE_DURATION = 1.0;
+const RED_CHARGE_MULTIPLIER = 2.0;
+
 export class RedKnight extends Enemy {
+  charging = false;
+  chargeTimer = 0;
+  chargeDir: Vec2 = { x: 0, z: 0 };
+
   constructor(position: Vec2) {
     super(position, 4, 4.5, 2, 12, 1.0);
+  }
+
+  startCharge(player: Player): void {
+    this.charging = true;
+    this.chargeTimer = RED_CHARGE_DURATION;
+    const d = sub(player.position, this.position);
+    const len = length(d);
+    if (len === 0) {
+      this.chargeDir = { x: 1, z: 0 };
+    } else {
+      this.chargeDir = { x: d.x / len, z: d.z / len };
+    }
+  }
+
+  protected tickChase(dt: number, world: World): void {
+    if (!this.charging) {
+      const player = world.entities.find((e) => e instanceof Player) as Player | undefined;
+      if (player && distance(this.position, player.position) > this.meleeRange) {
+        this.startCharge(player);
+      }
+    }
+    if (this.charging) {
+      this.chargeTimer -= dt;
+      const motion = {
+        x: this.chargeDir.x * this.speed * RED_CHARGE_MULTIPLIER * dt,
+        z: this.chargeDir.z * this.speed * RED_CHARGE_MULTIPLIER * dt,
+      };
+      this.position = resolveMovement(world.grid, makeAABB(this.position, this.halfExtents), motion, world.cellSize);
+      this.yaw = Math.atan2(this.chargeDir.z, this.chargeDir.x);
+      if (this.chargeTimer <= 0) {
+        this.charging = false;
+      }
+      const player = world.entities.find((e) => e instanceof Player) as Player | undefined;
+      if (player && distance(this.position, player.position) <= this.meleeRange) {
+        this.state = EnemyState.Attack;
+        this.stateTimer = ATTACK_DURATION;
+        this.hasDealtAttackDamage = false;
+        this.charging = false;
+      }
+      return;
+    }
+    super.tickChase(dt, world);
   }
 }
 
 export class PurpleKnight extends Enemy {
+  spawnedMinionsAt50 = false;
+  spawnedMinionsAt25 = false;
+
   constructor(position: Vec2) {
     super(position, 20, 3.0, 4, 9999, 1.5);
+  }
+
+  maybeSummon(world: World): void {
+    const half = this.maxHp / 2;
+    const quarter = this.maxHp / 4;
+    if (!this.spawnedMinionsAt50 && this.hp <= half) {
+      this.spawnMinions(world);
+      this.spawnedMinionsAt50 = true;
+    } else if (!this.spawnedMinionsAt25 && this.hp <= quarter) {
+      this.spawnMinions(world);
+      this.spawnedMinionsAt25 = true;
+    }
+  }
+
+  private spawnMinions(world: World): void {
+    world.add(new GreenKnight({ x: this.position.x - 2, z: this.position.z - 2 }));
+    world.add(new GreenKnight({ x: this.position.x + 2, z: this.position.z - 2 }));
   }
 }
 
