@@ -24,6 +24,60 @@ export async function loadTexture(url: string): Promise<THREE.Texture> {
   });
 }
 
+/**
+ * Load a texture and replace pixels matching the color key with alpha=0.
+ * Used for sprite sheets where the background is a single solid color
+ * (e.g. SNES sprites that use #FF00FF magenta as a transparency key).
+ */
+export async function loadTextureColorKeyed(
+  url: string,
+  keyR = 255,
+  keyG = 0,
+  keyB = 255,
+  tolerance = 16,
+): Promise<THREE.Texture> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Failed to get 2d canvas context'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const px = data.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const r = px[i];
+        const g = px[i + 1];
+        const b = px[i + 2];
+        if (
+          Math.abs(r - keyR) <= tolerance &&
+          Math.abs(g - keyG) <= tolerance &&
+          Math.abs(b - keyB) <= tolerance
+        ) {
+          px[i + 3] = 0;
+        }
+      }
+      ctx.putImageData(data, 0, 0);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.magFilter = THREE.NearestFilter;
+      tex.minFilter = THREE.NearestFilter;
+      tex.generateMipmaps = false;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      resolve(tex);
+    };
+    img.onerror = () => reject(new Error(`Failed to load image at ${url}`));
+    img.src = url;
+  });
+}
+
 export function frameToUV(frame: SpriteFrame, atlasW: number, atlasH: number): { u: number; v: number; w: number; h: number } {
   return {
     u: frame.u / atlasW,

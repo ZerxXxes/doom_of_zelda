@@ -20,7 +20,7 @@ import { Cell } from './level/cell';
 import { makeAABB, aabbOverlaps } from './math/aabb';
 import { fromYaw } from './math/vec2';
 import { buildLevelMesh, LevelMesh } from './render/level-mesh';
-import { loadTexture } from './render/sprite-atlas';
+import { loadTexture, loadTextureColorKeyed } from './render/sprite-atlas';
 import { TileAtlas } from './render/tile-atlas';
 import { BillboardManager, KnightTextures } from './render/billboard';
 import { ProjectileRenderer } from './render/projectile-render';
@@ -60,9 +60,9 @@ export class Game {
   async start(): Promise<void> {
     this.dungeonTexture = await loadTexture('sprites/dungeon-tiles.png');
     const [front, side, back] = await Promise.all([
-      loadTexture('sprites/blue_knight_front.png'),
-      loadTexture('sprites/blue_knight_side.png'),
-      loadTexture('sprites/blue_knight_back.png'),
+      loadTextureColorKeyed('sprites/blue_knight_front.png'),
+      loadTextureColorKeyed('sprites/blue_knight_side.png'),
+      loadTextureColorKeyed('sprites/blue_knight_back.png'),
     ]);
     this.knightTextures = { front, side, back };
     this.loadLevel();
@@ -168,12 +168,12 @@ export class Game {
 
   private handleInput(dt: number): void {
     const md = this.input.consumeMouseDelta();
-    this.player.yaw -= md.dx * MOUSE_SENSITIVITY;
+    this.player.yaw += md.dx * MOUSE_SENSITIVITY;
     this.player.pitch -= md.dy * MOUSE_SENSITIVITY;
     this.player.pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, this.player.pitch));
 
     const forward = fromYaw(this.player.yaw);
-    const strafe = { x: forward.z, z: -forward.x };
+    const strafe = { x: -forward.z, z: forward.x };
     let mx = 0;
     let mz = 0;
     if (this.input.isDown('KeyW')) { mx += forward.x; mz += forward.z; }
