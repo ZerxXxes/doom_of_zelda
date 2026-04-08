@@ -1,0 +1,35 @@
+{
+  "name": "Test Level",
+  "theme": "castle",
+  "gridSize": 4.0,
+  "width": 5,
+  "height": 5,
+  "tiles": [
+    "#####",
+    "#...#",
+    "#.G.#",
+    "#..L#",
+    "#####"
+  ],
+  "legend": {
+    "#": { "type": "wall", "texture": "castle_stone" },
+    ".": { "type": "floor" },
+    "G": { "type": "floor" },
+    "L": { "type": "door", "locked": true, "key": "small_key" }
+  },
+  "spawns": {
+    "player": { "x": 1.5, "z": 1.5, "yaw": 0 },
+    "enemies": [
+      { "type": "green_knight", "x": 2.5, "z": 2.5 }
+    ],
+    "pickups": [
+      { "type": "small_key", "x": 1.5, "z": 3.5 }
+    ]
+  },
+  "ambient": {
+    "wallHeight": 4.0,
+    "floorColor": "#2a1e12",
+    "ceilingColor": "#0a0604",
+    "fogDensity": 0.04
+  }
+}
