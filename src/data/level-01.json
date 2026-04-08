@@ -1,0 +1,37 @@
+{
+  "name": "Placeholder",
+  "theme": "castle",
+  "gridSize": 4.0,
+  "width": 8,
+  "height": 8,
+  "tiles": [
+    "########",
+    "#......#",
+    "#......#",
+    "#......#",
+    "#......#",
+    "#......#",
+    "#..X...#",
+    "########"
+  ],
+  "legend": {
+    "#": { "type": "wall", "texture": "castle_stone" },
+    ".": { "type": "floor" },
+    "X": { "type": "exit" }
+  },
+  "spawns": {
+    "player": { "x": 2, "z": 2, "yaw": 0 },
+    "enemies": [
+      { "type": "green_knight", "x": 4, "z": 4 }
+    ],
+    "pickups": [
+      { "type": "weapon_bow", "x": 5, "z": 5 }
+    ]
+  },
+  "ambient": {
+    "wallHeight": 4.0,
+    "floorColor": "#2a1e12",
+    "ceilingColor": "#0a0604",
+    "fogDensity": 0.04
+  }
+}
