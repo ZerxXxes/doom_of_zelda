@@ -20,14 +20,13 @@ import { Cell } from './level/cell';
 import { makeAABB, aabbOverlaps } from './math/aabb';
 import { fromYaw } from './math/vec2';
 import { buildLevelMesh, LevelMesh } from './render/level-mesh';
-import { loadTexture, KnightAtlas } from './render/sprite-atlas';
+import { loadTexture } from './render/sprite-atlas';
 import { TileAtlas } from './render/tile-atlas';
-import { BillboardManager } from './render/billboard';
+import { BillboardManager, KnightTextures } from './render/billboard';
 import { ProjectileRenderer } from './render/projectile-render';
 import { playSound } from './audio';
 import levelJsonRaw from './data/level-01.json';
 import tileAtlasRaw from './render/tile-atlas.json';
-import knightAtlasRaw from './render/knight-atlas.json';
 
 const MOVE_SPEED = 7;
 const MOUSE_SENSITIVITY = 0.0025;
@@ -45,9 +44,8 @@ export class Game {
   private billboards!: BillboardManager;
   private projectileRenderer!: ProjectileRenderer;
   private dungeonTexture!: THREE.Texture;
-  private knightTexture!: THREE.Texture;
+  private knightTextures!: KnightTextures;
   private tileAtlas: TileAtlas;
-  private knightAtlas: KnightAtlas;
   private lastTime = 0;
   private dead = false;
   private won = false;
@@ -57,12 +55,16 @@ export class Game {
     this.input = new Input(canvas);
     this.hud = new Hud();
     this.tileAtlas = tileAtlasRaw as TileAtlas;
-    this.knightAtlas = knightAtlasRaw as KnightAtlas;
   }
 
   async start(): Promise<void> {
     this.dungeonTexture = await loadTexture('sprites/dungeon-tiles.png');
-    this.knightTexture = await loadTexture('sprites/hylian-knights.png');
+    const [front, side, back] = await Promise.all([
+      loadTexture('sprites/blue_knight_front.png'),
+      loadTexture('sprites/blue_knight_side.png'),
+      loadTexture('sprites/blue_knight_back.png'),
+    ]);
+    this.knightTextures = { front, side, back };
     this.loadLevel();
     requestAnimationFrame((t) => this.tick(t));
   }
@@ -109,7 +111,7 @@ export class Game {
     this.renderer.scene.add(this.levelMesh.ceiling);
     this.renderer.applyAmbient(this.level.ambient);
 
-    this.billboards = new BillboardManager(this.renderer.scene, this.knightTexture, this.knightAtlas);
+    this.billboards = new BillboardManager(this.renderer.scene, this.knightTextures);
     this.projectileRenderer = new ProjectileRenderer(this.renderer.scene);
     for (const e of this.world.entities) {
       if (e instanceof Enemy) this.billboards.add(e);
