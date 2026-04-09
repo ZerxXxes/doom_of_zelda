@@ -1,7 +1,12 @@
 import * as THREE from 'three';
 import { Level } from '../level/level';
 import { isSolid } from '../level/cell';
-import { TileAtlas, tileUVForName } from './tile-atlas';
+
+export interface LevelTextures {
+  wall: THREE.Texture;
+  floor: THREE.Texture;
+  ceiling: THREE.Texture;
+}
 
 export interface LevelMesh {
   walls: THREE.Mesh;
@@ -13,17 +18,14 @@ export interface LevelMesh {
  * Build a single merged BufferGeometry per layer (walls, floor, ceiling).
  * One material per layer means three draw calls regardless of level size.
  */
-export function buildLevelMesh(
-  level: Level,
-  texture: THREE.Texture,
-  atlas: TileAtlas,
-): LevelMesh {
+export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh {
   const cs = level.gridSize;
   const wh = level.ambient.wallHeight;
 
-  const wallUV = tileUVForName(atlas, 'castle_stone_wall');
-  const floorUV = tileUVForName(atlas, 'castle_stone_floor');
-  const ceilUV = tileUVForName(atlas, 'castle_stone_ceiling');
+  for (const tex of [textures.wall, textures.floor, textures.ceiling]) {
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+  }
 
   const wallPositions: number[] = [];
   const wallUVs: number[] = [];
@@ -49,10 +51,11 @@ export function buildLevelMesh(
     p1: number[],
     p2: number[],
     p3: number[],
-    uv: { u: number; v: number; w: number; h: number },
+    uRepeat: number,
+    vRepeat: number,
   ) {
     positions.push(...p0, ...p1, ...p2, ...p3);
-    uvs.push(uv.u, uv.v + uv.h, uv.u + uv.w, uv.v + uv.h, uv.u + uv.w, uv.v, uv.u, uv.v);
+    uvs.push(0, 0, uRepeat, 0, uRepeat, vRepeat, 0, vRepeat);
     indices.push(baseCount, baseCount + 1, baseCount + 2, baseCount, baseCount + 2, baseCount + 3);
   }
 
@@ -68,7 +71,7 @@ export function buildLevelMesh(
         [(x + 1) * cs, 0, z * cs],
         [(x + 1) * cs, 0, (z + 1) * cs],
         [x * cs,       0, (z + 1) * cs],
-        floorUV,
+        1, 1,
       );
       floorVertexCount += 4;
 
@@ -79,9 +82,11 @@ export function buildLevelMesh(
         [(x + 1) * cs, wh, (z + 1) * cs],
         [(x + 1) * cs, wh, z * cs],
         [x * cs,       wh, z * cs],
-        ceilUV,
+        1, 1,
       );
       ceilVertexCount += 4;
+
+      const wallVRepeat = wh / cs;
 
       // West neighbor (-x)
       if (isSolid(level.grid.get(x - 1, z))) {
@@ -91,7 +96,7 @@ export function buildLevelMesh(
           [x * cs, 0,  (z + 1) * cs],
           [x * cs, wh, (z + 1) * cs],
           [x * cs, wh, z * cs],
-          wallUV,
+          1, wallVRepeat,
         );
         wallVertexCount += 4;
       }
@@ -103,7 +108,7 @@ export function buildLevelMesh(
           [(x + 1) * cs, 0,  z * cs],
           [(x + 1) * cs, wh, z * cs],
           [(x + 1) * cs, wh, (z + 1) * cs],
-          wallUV,
+          1, wallVRepeat,
         );
         wallVertexCount += 4;
       }
@@ -115,7 +120,7 @@ export function buildLevelMesh(
           [x * cs,       0,  z * cs],
           [x * cs,       wh, z * cs],
           [(x + 1) * cs, wh, z * cs],
-          wallUV,
+          1, wallVRepeat,
         );
         wallVertexCount += 4;
       }
@@ -127,19 +132,19 @@ export function buildLevelMesh(
           [(x + 1) * cs, 0,  (z + 1) * cs],
           [(x + 1) * cs, wh, (z + 1) * cs],
           [x * cs,       wh, (z + 1) * cs],
-          wallUV,
+          1, wallVRepeat,
         );
         wallVertexCount += 4;
       }
     }
   }
 
-  const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.FrontSide });
-  const floorMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(level.ambient.floorColor) });
-  const ceilMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(level.ambient.ceilingColor) });
+  const wallMat = new THREE.MeshBasicMaterial({ map: textures.wall, side: THREE.FrontSide });
+  const floorMat = new THREE.MeshBasicMaterial({ map: textures.floor, side: THREE.FrontSide });
+  const ceilMat = new THREE.MeshBasicMaterial({ map: textures.ceiling, side: THREE.FrontSide });
 
   return {
-    walls: meshFromArrays(wallPositions, wallUVs, wallIndices, material),
+    walls: meshFromArrays(wallPositions, wallUVs, wallIndices, wallMat),
     floor: meshFromArrays(floorPositions, floorUVs, floorIndices, floorMat),
     ceiling: meshFromArrays(ceilPositions, ceilUVs, ceilIndices, ceilMat),
   };

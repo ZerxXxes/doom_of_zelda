@@ -19,14 +19,12 @@ import { resolveMovement } from './level/collision';
 import { Cell } from './level/cell';
 import { makeAABB, aabbOverlaps } from './math/aabb';
 import { fromYaw } from './math/vec2';
-import { buildLevelMesh, LevelMesh } from './render/level-mesh';
+import { buildLevelMesh, LevelMesh, LevelTextures } from './render/level-mesh';
 import { loadTexture, loadTextureColorKeyed } from './render/sprite-atlas';
-import { TileAtlas } from './render/tile-atlas';
 import { BillboardManager, KnightTextures } from './render/billboard';
 import { ProjectileRenderer } from './render/projectile-render';
 import { playSound } from './audio';
 import levelJsonRaw from './data/level-01.json';
-import tileAtlasRaw from './render/tile-atlas.json';
 
 const MOVE_SPEED = 7;
 const MOUSE_SENSITIVITY = 0.0025;
@@ -43,9 +41,8 @@ export class Game {
   private levelMesh: LevelMesh | null = null;
   private billboards!: BillboardManager;
   private projectileRenderer!: ProjectileRenderer;
-  private dungeonTexture!: THREE.Texture;
+  private levelTextures!: LevelTextures;
   private knightTextures!: KnightTextures;
-  private tileAtlas: TileAtlas;
   private lastTime = 0;
   private dead = false;
   private won = false;
@@ -54,11 +51,15 @@ export class Game {
     this.renderer = new Renderer(canvas);
     this.input = new Input(canvas);
     this.hud = new Hud();
-    this.tileAtlas = tileAtlasRaw as TileAtlas;
   }
 
   async start(): Promise<void> {
-    this.dungeonTexture = await loadTexture('sprites/dungeon-tiles.png');
+    const [dungeonWall, dungeonFloor, dungeonCeiling] = await Promise.all([
+      loadTexture('sprites/wall_tile_dark_blue.png'),
+      loadTexture('sprites/ground_tile_dark.png'),
+      loadTexture('sprites/ground_tile_light.png'),
+    ]);
+    this.levelTextures = { wall: dungeonWall, floor: dungeonFloor, ceiling: dungeonCeiling };
     const [f1, f2, f3, f4, s1, s2, s3, b1, b2, b3, b4] = await Promise.all([
       loadTextureColorKeyed('sprites/blue_knight_front_1.png'),
       loadTextureColorKeyed('sprites/blue_knight_front_2.png'),
@@ -128,7 +129,7 @@ export class Game {
       this.renderer.scene.remove(this.levelMesh.floor);
       this.renderer.scene.remove(this.levelMesh.ceiling);
     }
-    this.levelMesh = buildLevelMesh(this.level, this.dungeonTexture, this.tileAtlas);
+    this.levelMesh = buildLevelMesh(this.level, this.levelTextures);
     this.renderer.scene.add(this.levelMesh.walls);
     this.renderer.scene.add(this.levelMesh.floor);
     this.renderer.scene.add(this.levelMesh.ceiling);
@@ -177,7 +178,7 @@ export class Game {
       this.renderer.scene.remove(this.levelMesh.walls);
       this.renderer.scene.remove(this.levelMesh.floor);
       this.renderer.scene.remove(this.levelMesh.ceiling);
-      this.levelMesh = buildLevelMesh(this.level, this.dungeonTexture, this.tileAtlas);
+      this.levelMesh = buildLevelMesh(this.level, this.levelTextures);
       this.renderer.scene.add(this.levelMesh.walls);
       this.renderer.scene.add(this.levelMesh.floor);
       this.renderer.scene.add(this.levelMesh.ceiling);
