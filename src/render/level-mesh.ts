@@ -18,9 +18,16 @@ export interface LevelMesh {
  * Build a single merged BufferGeometry per layer (walls, floor, ceiling).
  * One material per layer means three draw calls regardless of level size.
  */
+// Wall texture is 30px tall; bottom 7px are a baseboard that sits on the floor
+const WALL_TEX_HEIGHT = 30;
+const BASEBOARD_PX = 7;
+const BASEBOARD_V = BASEBOARD_PX / WALL_TEX_HEIGHT; // UV fraction
+const BASEBOARD_Y = 0.01; // epsilon above floor to prevent z-fighting
+
 export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh {
   const cs = level.gridSize;
   const wh = level.ambient.wallHeight;
+  const boardWidth = cs * BASEBOARD_V; // world-space depth of the baseboard strip
 
   for (const tex of [textures.wall, textures.floor, textures.ceiling]) {
     tex.wrapS = THREE.RepeatWrapping;
@@ -99,6 +106,16 @@ export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh
           1, wallVRepeat,
         );
         wallVertexCount += 4;
+        // Baseboard: flat on floor, extends +X into the room
+        pushQuad(
+          wallPositions, wallUVs, wallIndices, wallVertexCount,
+          [x * cs,             BASEBOARD_Y, z * cs],
+          [x * cs,             BASEBOARD_Y, (z + 1) * cs],
+          [x * cs + boardWidth, BASEBOARD_Y, (z + 1) * cs],
+          [x * cs + boardWidth, BASEBOARD_Y, z * cs],
+          1, BASEBOARD_V,
+        );
+        wallVertexCount += 4;
       }
       // East neighbor (+x)
       if (isSolid(level.grid.get(x + 1, z))) {
@@ -109,6 +126,16 @@ export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh
           [(x + 1) * cs, wh, (z + 1) * cs],
           [(x + 1) * cs, wh, z * cs],
           1, wallVRepeat,
+        );
+        wallVertexCount += 4;
+        // Baseboard: extends -X into the room
+        pushQuad(
+          wallPositions, wallUVs, wallIndices, wallVertexCount,
+          [(x + 1) * cs - boardWidth, BASEBOARD_Y, (z + 1) * cs],
+          [(x + 1) * cs - boardWidth, BASEBOARD_Y, z * cs],
+          [(x + 1) * cs,              BASEBOARD_Y, z * cs],
+          [(x + 1) * cs,              BASEBOARD_Y, (z + 1) * cs],
+          1, BASEBOARD_V,
         );
         wallVertexCount += 4;
       }
@@ -123,6 +150,16 @@ export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh
           1, wallVRepeat,
         );
         wallVertexCount += 4;
+        // Baseboard: extends +Z into the room
+        pushQuad(
+          wallPositions, wallUVs, wallIndices, wallVertexCount,
+          [(x + 1) * cs, BASEBOARD_Y, z * cs],
+          [x * cs,       BASEBOARD_Y, z * cs],
+          [x * cs,       BASEBOARD_Y, z * cs + boardWidth],
+          [(x + 1) * cs, BASEBOARD_Y, z * cs + boardWidth],
+          1, BASEBOARD_V,
+        );
+        wallVertexCount += 4;
       }
       // South neighbor (+z)
       if (isSolid(level.grid.get(x, z + 1))) {
@@ -133,6 +170,16 @@ export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh
           [x * cs,       wh, (z + 1) * cs],
           [(x + 1) * cs, wh, (z + 1) * cs],
           1, wallVRepeat,
+        );
+        wallVertexCount += 4;
+        // Baseboard: extends -Z into the room
+        pushQuad(
+          wallPositions, wallUVs, wallIndices, wallVertexCount,
+          [x * cs,       BASEBOARD_Y, (z + 1) * cs],
+          [(x + 1) * cs, BASEBOARD_Y, (z + 1) * cs],
+          [(x + 1) * cs, BASEBOARD_Y, (z + 1) * cs - boardWidth],
+          [x * cs,       BASEBOARD_Y, (z + 1) * cs - boardWidth],
+          1, BASEBOARD_V,
         );
         wallVertexCount += 4;
       }
