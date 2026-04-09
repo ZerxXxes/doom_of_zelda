@@ -3,10 +3,13 @@ import { Entity } from './entity';
 import { World } from './world';
 import { Cell, isSolid } from '../level/cell';
 
-export const BOMB_GRAVITY = -12;
-export const BOMB_LIFETIME = 2.0;
+export const BOMB_GRAVITY = -15;
+export const BOMB_LIFETIME = 2.0; // keep for backward compat in tests
 export const BLAST_RADIUS = 3.0;
 export const BOMB_DIRECT_DAMAGE = 8;
+export const BOMB_FUSE_DURATION = 1.5; // seconds on ground before detonation
+export const BOMB_BOUNCE_DAMPING = 0.35;
+export const BOMB_THROW_UP_SPEED = 5;
 
 export const FIREBOLT_SPEED = 20;
 export const FIREBOLT_DAMAGE = 4;
@@ -16,8 +19,10 @@ export type DamageFn = (target: Entity, dmg: number) => void;
 
 export class Bomb extends Entity {
   velocity: Vec2;
+  height: number;
   heightVelocity: number;
-  lifetime = BOMB_LIFETIME;
+  grounded = false;
+  fuseTimer = BOMB_FUSE_DURATION;
   ownerId: number;
   detonateCallback?: (world: World) => void;
   detonated = false;
@@ -27,7 +32,8 @@ export class Bomb extends Entity {
   constructor(position: Vec2, velocity: Vec2, ownerId: number) {
     super(position, { x: 0.2, z: 0.2 });
     this.velocity = { ...velocity };
-    this.heightVelocity = 4;
+    this.height = 0.5; // start at hand height
+    this.heightVelocity = BOMB_THROW_UP_SPEED;
     this.ownerId = ownerId;
   }
 
@@ -39,13 +45,35 @@ export class Bomb extends Entity {
       }
       return;
     }
-    this.heightVelocity += BOMB_GRAVITY * dt;
-    this.position = add(this.position, scale(this.velocity, dt));
-    this.lifetime -= dt;
-    if (this.lifetime <= 0) {
-      if (this.detonateCallback) this.detonateCallback(world);
-      this.detonated = true;
-      this.explosionTimer = Bomb.EXPLOSION_DURATION;
+
+    if (!this.grounded) {
+      // Flying phase: arc with gravity
+      this.height += this.heightVelocity * dt;
+      this.heightVelocity += BOMB_GRAVITY * dt;
+      this.position = add(this.position, scale(this.velocity, dt));
+
+      // Hit the ground?
+      if (this.height <= 0) {
+        this.height = 0;
+        if (Math.abs(this.heightVelocity) < 1.5) {
+          // Too slow to bounce — settle on ground
+          this.grounded = true;
+          this.velocity = { x: 0, z: 0 };
+          this.heightVelocity = 0;
+        } else {
+          // Bounce: reverse and damp vertical, slow horizontal
+          this.heightVelocity *= -BOMB_BOUNCE_DAMPING;
+          this.velocity = scale(this.velocity, 0.3);
+        }
+      }
+    } else {
+      // Grounded: fuse is burning
+      this.fuseTimer -= dt;
+      if (this.fuseTimer <= 0) {
+        if (this.detonateCallback) this.detonateCallback(world);
+        this.detonated = true;
+        this.explosionTimer = Bomb.EXPLOSION_DURATION;
+      }
     }
   }
 

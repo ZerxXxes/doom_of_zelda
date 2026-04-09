@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Bomb, FireBolt, BOMB_LIFETIME } from '../entities/projectile';
+import { Bomb, FireBolt, BOMB_FUSE_DURATION } from '../entities/projectile';
 import { World } from '../entities/world';
 
 export class ProjectileRenderer {
@@ -14,7 +14,7 @@ export class ProjectileRenderer {
   }
 
   sync(world: World): void {
-    // Add new bombs as sprites
+    // Add new bombs
     for (const e of world.entities) {
       if (e instanceof Bomb && !this.bombVisuals.has(e)) {
         const mat = new THREE.SpriteMaterial({
@@ -34,28 +34,33 @@ export class ProjectileRenderer {
       }
     }
 
-    // Update bomb sprite positions and animation frames
+    // Update bombs
     for (const [b, sprite] of this.bombVisuals) {
-      sprite.position.set(b.position.x, 0.5, b.position.z);
+      // Y position from the bomb's actual height
+      sprite.position.set(b.position.x, b.height + 0.3, b.position.z);
 
       const mat = sprite.material as THREE.SpriteMaterial;
       let frameIndex: number;
 
       if (b.detonated) {
-        // Explosion phase: frames 7-15 over EXPLOSION_DURATION
-        const explosionProgress = 1 - (b.explosionTimer / Bomb.EXPLOSION_DURATION);
-        frameIndex = 7 + Math.min(Math.floor(explosionProgress * 9), 8); // frames 7-15
-        sprite.scale.set(2.5, 2.5, 1); // explosion is bigger
+        // Explosion: frames 7-15
+        const progress = 1 - (b.explosionTimer / Bomb.EXPLOSION_DURATION);
+        frameIndex = 7 + Math.min(Math.floor(progress * 9), 8);
+        sprite.scale.set(2.5, 2.5, 1);
+      } else if (!b.grounded) {
+        // Flying: show frame 0
+        frameIndex = 0;
+        sprite.scale.set(1.0, 1.0, 1);
       } else {
-        const elapsed = BOMB_LIFETIME - b.lifetime;
-        const progress = elapsed / BOMB_LIFETIME; // 0 to 1
-        if (progress < 0.6) {
-          // Sitting: frame 0
+        // Grounded with fuse burning
+        const fuseProgress = 1 - (b.fuseTimer / BOMB_FUSE_DURATION); // 0 to 1
+        if (fuseProgress < 0.5) {
+          // First half: static bomb
           frameIndex = 0;
         } else {
-          // Blinking: cycle through frames 1-6
-          const blinkElapsed = elapsed - BOMB_LIFETIME * 0.6;
-          frameIndex = 1 + (Math.floor(blinkElapsed * 10) % 6); // frames 1-6 at 10fps
+          // Second half: blink through frames 1-6
+          const blinkTime = (fuseProgress - 0.5) * BOMB_FUSE_DURATION;
+          frameIndex = 1 + (Math.floor(blinkTime * 10) % 6);
         }
         sprite.scale.set(1.0, 1.0, 1);
       }
@@ -64,12 +69,12 @@ export class ProjectileRenderer {
       mat.needsUpdate = true;
     }
 
-    // Update fire bolt positions
+    // Update fire bolts
     for (const [f, mesh] of this.fireMeshes) {
       mesh.position.set(f.position.x, 1.0, f.position.z);
     }
 
-    // Remove dead bombs
+    // Remove dead
     for (const [b, sprite] of this.bombVisuals) {
       if (!b.alive) {
         this.scene.remove(sprite);
@@ -77,7 +82,6 @@ export class ProjectileRenderer {
         this.bombVisuals.delete(b);
       }
     }
-    // Remove dead fire bolts
     for (const [f, mesh] of this.fireMeshes) {
       if (!f.alive) {
         this.scene.remove(mesh);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Bomb, FireBolt, BLAST_RADIUS, BOMB_DIRECT_DAMAGE } from '../../src/entities/projectile';
+import { Bomb, FireBolt, BLAST_RADIUS, BOMB_DIRECT_DAMAGE, BOMB_GRAVITY } from '../../src/entities/projectile';
 import { World } from '../../src/entities/world';
 import { makeGrid } from '../../src/level/grid';
 import { Cell } from '../../src/level/cell';
@@ -20,14 +20,17 @@ describe('Bomb projectile', () => {
     const b = new Bomb({ x: 0, z: 0 }, { x: 0, z: 0 }, 0);
     b.heightVelocity = 4;
     b.update(0.5, w);
-    expect(b.heightVelocity).toBeCloseTo(-2);
+    // After 0.5s with BOMB_GRAVITY: 4 + (-15 * 0.5) = 4 - 7.5 = -3.5
+    expect(b.heightVelocity).toBeCloseTo(4 + BOMB_GRAVITY * 0.5);
   });
 
-  it('detonates after lifetime expires and enters explosion phase', () => {
+  it('detonates after landing and fuse burns, then enters explosion phase', () => {
     const g = makeGrid(10, 10);
     const w = new World(g, 1);
     const b = new Bomb({ x: 1, z: 1 }, { x: 0, z: 0 }, 0);
-    b.lifetime = 0.01;
+    // Manually settle the bomb on the ground and set fuse almost expired
+    b.grounded = true;
+    b.fuseTimer = 0.01;
     b.update(0.02, w);
     // Bomb is now detonated but still alive during explosion animation
     expect(b.detonated).toBe(true);

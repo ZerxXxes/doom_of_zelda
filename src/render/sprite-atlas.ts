@@ -96,6 +96,68 @@ export function sliceSpriteStrip(baseTexture: THREE.Texture, frameCount: number)
   return frames;
 }
 
+/**
+ * Slice a horizontal sprite strip into N frames using canvas pixel copying.
+ * Unlike sliceSpriteStrip (which uses UV offset/repeat and can bleed at
+ * non-pixel-aligned boundaries), this creates an independent CanvasTexture
+ * per frame with exact pixel boundaries.
+ */
+export function sliceSpriteStripExact(
+  image: HTMLImageElement | HTMLCanvasElement,
+  frameCount: number,
+): THREE.Texture[] {
+  const totalW = image.width;
+  const h = image.height;
+  const frameW = Math.floor(totalW / frameCount);
+  const frames: THREE.Texture[] = [];
+  for (let i = 0; i < frameCount; i++) {
+    const canvas = document.createElement('canvas');
+    canvas.width = frameW;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(image, i * frameW, 0, frameW, h, 0, 0, frameW, h);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.generateMipmaps = false;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    frames.push(tex);
+  }
+  return frames;
+}
+
+/**
+ * Load an image, apply magenta color keying, return the processed canvas.
+ */
+export function loadImageColorKeyed(
+  url: string,
+  keyR = 255, keyG = 0, keyB = 255, tolerance = 16,
+): Promise<HTMLCanvasElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('no 2d context')); return; }
+      ctx.drawImage(img, 0, 0);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const px = data.data;
+      for (let i = 0; i < px.length; i += 4) {
+        if (Math.abs(px[i] - keyR) <= tolerance && Math.abs(px[i+1] - keyG) <= tolerance && Math.abs(px[i+2] - keyB) <= tolerance) {
+          px[i+3] = 0;
+        }
+      }
+      ctx.putImageData(data, 0, 0);
+      resolve(canvas);
+    };
+    img.onerror = () => reject(new Error(`Failed to load ${url}`));
+    img.src = url;
+  });
+}
+
 export function frameToUV(frame: SpriteFrame, atlasW: number, atlasH: number): { u: number; v: number; w: number; h: number } {
   return {
     u: frame.u / atlasW,

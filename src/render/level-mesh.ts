@@ -60,9 +60,10 @@ export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh
     p3: number[],
     uRepeat: number,
     vRepeat: number,
+    vStart = 0,
   ) {
     positions.push(...p0, ...p1, ...p2, ...p3);
-    uvs.push(0, 0, uRepeat, 0, uRepeat, vRepeat, 0, vRepeat);
+    uvs.push(0, vStart, uRepeat, vStart, uRepeat, vRepeat, 0, vRepeat);
     indices.push(baseCount, baseCount + 1, baseCount + 2, baseCount, baseCount + 2, baseCount + 3);
   }
 
@@ -103,7 +104,7 @@ export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh
           [x * cs, 0,  z * cs],
           [x * cs, wh, z * cs],
           [x * cs, wh, (z + 1) * cs],
-          1, wallVRepeat,
+          1, wallVRepeat, BASEBOARD_V,
         );
         wallVertexCount += 4;
         // Baseboard: flat on floor, extends +X into the room
@@ -125,7 +126,7 @@ export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh
           [(x + 1) * cs, 0,  (z + 1) * cs],
           [(x + 1) * cs, wh, (z + 1) * cs],
           [(x + 1) * cs, wh, z * cs],
-          1, wallVRepeat,
+          1, wallVRepeat, BASEBOARD_V,
         );
         wallVertexCount += 4;
         // Baseboard: extends -X into the room
@@ -147,7 +148,7 @@ export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh
           [(x + 1) * cs, 0,  z * cs],
           [(x + 1) * cs, wh, z * cs],
           [x * cs,       wh, z * cs],
-          1, wallVRepeat,
+          1, wallVRepeat, BASEBOARD_V,
         );
         wallVertexCount += 4;
         // Baseboard: extends +Z into the room
@@ -169,7 +170,7 @@ export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh
           [x * cs,       0,  (z + 1) * cs],
           [x * cs,       wh, (z + 1) * cs],
           [(x + 1) * cs, wh, (z + 1) * cs],
-          1, wallVRepeat,
+          1, wallVRepeat, BASEBOARD_V,
         );
         wallVertexCount += 4;
         // Baseboard: extends -Z into the room
