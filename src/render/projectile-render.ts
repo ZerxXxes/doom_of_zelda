@@ -1,24 +1,25 @@
 import * as THREE from 'three';
-import { Bomb, FireBolt, Arrow, BOMB_FUSE_DURATION } from '../entities/projectile';
+import { Bomb, FireBolt, Arrow, BOMB_FUSE_DURATION, FIREBOLT_LIFETIME } from '../entities/projectile';
 import { World } from '../entities/world';
 
 export class ProjectileRenderer {
   private bombVisuals = new Map<Bomb, THREE.Sprite>();
-  private fireMeshes = new Map<FireBolt, THREE.Mesh>();
+  private fireVisuals = new Map<FireBolt, THREE.Sprite>();
   private arrowVisuals = new Map<Arrow, THREE.Sprite>();
   private bombFrames: THREE.Texture[];
+  private fireFrames: THREE.Texture[];
   private arrowTex: THREE.Texture;
   private arrowStuckTex: THREE.Texture;
-  private fireGeo = new THREE.SphereGeometry(0.15, 8, 6);
-  private fireMat = new THREE.MeshBasicMaterial({ color: 0xffaa22 });
 
   constructor(
     private scene: THREE.Scene,
     bombFrames: THREE.Texture[],
+    fireFrames: THREE.Texture[],
     arrowTex: THREE.Texture,
     arrowStuckTex: THREE.Texture,
   ) {
     this.bombFrames = bombFrames;
+    this.fireFrames = fireFrames;
     this.arrowTex = arrowTex;
     this.arrowStuckTex = arrowStuckTex;
   }
@@ -37,10 +38,16 @@ export class ProjectileRenderer {
         this.scene.add(sprite);
         this.bombVisuals.set(e, sprite);
       }
-      if (e instanceof FireBolt && !this.fireMeshes.has(e)) {
-        const m = new THREE.Mesh(this.fireGeo, this.fireMat);
-        this.scene.add(m);
-        this.fireMeshes.set(e, m);
+      if (e instanceof FireBolt && !this.fireVisuals.has(e)) {
+        const mat = new THREE.SpriteMaterial({
+          map: this.fireFrames[0],
+          transparent: true,
+          depthTest: true,
+        });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(0.6, 0.6, 1);
+        this.scene.add(sprite);
+        this.fireVisuals.set(e, sprite);
       }
       if (e instanceof Arrow && !this.arrowVisuals.has(e)) {
         const mat = new THREE.SpriteMaterial({
@@ -91,9 +98,14 @@ export class ProjectileRenderer {
       mat.needsUpdate = true;
     }
 
-    // Update fire bolts
-    for (const [f, mesh] of this.fireMeshes) {
-      mesh.position.set(f.position.x, 1.0, f.position.z);
+    // Update fire bolts — flicker between two frames
+    for (const [f, sprite] of this.fireVisuals) {
+      sprite.position.set(f.position.x, 1.0, f.position.z);
+      const elapsed = FIREBOLT_LIFETIME - f.lifetime;
+      const frameIdx = Math.floor(elapsed * 8) % this.fireFrames.length;
+      const mat = sprite.material as THREE.SpriteMaterial;
+      mat.map = this.fireFrames[frameIdx];
+      mat.needsUpdate = true;
     }
 
     // Update arrows — rotate sprite so arrowhead points in flight direction on screen
@@ -128,10 +140,11 @@ export class ProjectileRenderer {
         this.bombVisuals.delete(b);
       }
     }
-    for (const [f, mesh] of this.fireMeshes) {
+    for (const [f, sprite] of this.fireVisuals) {
       if (!f.alive) {
-        this.scene.remove(mesh);
-        this.fireMeshes.delete(f);
+        this.scene.remove(sprite);
+        sprite.material.dispose();
+        this.fireVisuals.delete(f);
       }
     }
     for (const [a, sprite] of this.arrowVisuals) {

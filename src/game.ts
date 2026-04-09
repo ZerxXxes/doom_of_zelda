@@ -55,6 +55,7 @@ export class Game {
   private statueTexture!: THREE.Texture;
   private arrowTex!: THREE.Texture;
   private arrowStuckTex!: THREE.Texture;
+  private fireFrames!: THREE.Texture[];
   private decorationRenderer!: DecorationRenderer;
   private lastTime = 0;
   private dead = false;
@@ -131,12 +132,15 @@ export class Game {
     this.doorTexture = doorTexture;
     const statueTexture = await loadTextureColorKeyed('sprites/statue.png');
     this.statueTexture = statueTexture;
-    const [arrowTex, arrowStuckTex] = await Promise.all([
+    const [arrowTex, arrowStuckTex, fireTex1, fireTex2] = await Promise.all([
       loadTextureColorKeyed('sprites/arrow.png'),
       loadTextureColorKeyed('sprites/arrow_stuck.png'),
+      loadTextureColorKeyed('sprites/fire_rod_projectile1.png'),
+      loadTextureColorKeyed('sprites/fire_rod_projectile2.png'),
     ]);
     this.arrowTex = arrowTex;
     this.arrowStuckTex = arrowStuckTex;
+    this.fireFrames = [fireTex1, fireTex2];
     this.hud.loadWeaponSprites();
     this.loadLevel();
     requestAnimationFrame((t) => this.tick(t));
@@ -195,7 +199,7 @@ export class Game {
     this.renderer.applyAmbient(this.level.ambient);
 
     this.billboards = new BillboardManager(this.renderer.scene, this.knightTextures, this.deathEffectFrames);
-    this.projectileRenderer = new ProjectileRenderer(this.renderer.scene, this.bombAnimFrames, this.arrowTex, this.arrowStuckTex);
+    this.projectileRenderer = new ProjectileRenderer(this.renderer.scene, this.bombAnimFrames, this.fireFrames, this.arrowTex, this.arrowStuckTex);
     this.doorRenderer = new DoorRenderer(this.renderer.scene, this.doorTexture);
     for (const e of this.world.entities) {
       if (e instanceof Enemy) this.billboards.add(e);
