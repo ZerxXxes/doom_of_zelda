@@ -5,6 +5,8 @@ import { Player, PLAYER_EYE_HEIGHT } from './entities/player';
 import { Enemy, GreenKnight, BlueKnight, RedKnight, PurpleKnight } from './entities/enemy';
 import { Pickup } from './entities/pickup';
 import { Door } from './entities/door';
+import { Decoration } from './entities/decoration';
+import { DecorationRenderer } from './render/decoration-render';
 import { Weapon } from './weapons/weapon';
 import { Sword } from './weapons/sword';
 import { Bow } from './weapons/bow';
@@ -23,6 +25,7 @@ import { buildLevelMesh, LevelMesh, LevelTextures } from './render/level-mesh';
 import { loadTexture, loadTextureColorKeyed } from './render/sprite-atlas';
 import { BillboardManager, KnightTextures } from './render/billboard';
 import { ProjectileRenderer } from './render/projectile-render';
+import { DoorRenderer, DoorTextures } from './render/door-render';
 import { playSound } from './audio';
 import levelJsonRaw from './data/level-01.json';
 
@@ -43,6 +46,8 @@ export class Game {
   private projectileRenderer!: ProjectileRenderer;
   private levelTextures!: LevelTextures;
   private knightTextures!: KnightTextures;
+  private doorTextures!: DoorTextures;
+  private doorRenderer!: DoorRenderer;
   private lastTime = 0;
   private dead = false;
   private won = false;
@@ -89,6 +94,12 @@ export class Game {
       sideRightFrames: [s1, s2, s3].map(flipTexture),
       backFrames: [b1, b2, b3, b4],
     };
+    const [doorLocked, doorUnlocked, doorOpen] = await Promise.all([
+      loadTextureColorKeyed('sprites/locked_door_red.png'),
+      loadTextureColorKeyed('sprites/unlocked_door_red.png'),
+      loadTextureColorKeyed('sprites/open_door_blue.png'),
+    ]);
+    this.doorTextures = { locked: doorLocked, unlocked: doorUnlocked, open: doorOpen };
     this.loadLevel();
     requestAnimationFrame((t) => this.tick(t));
   }
@@ -137,8 +148,10 @@ export class Game {
 
     this.billboards = new BillboardManager(this.renderer.scene, this.knightTextures);
     this.projectileRenderer = new ProjectileRenderer(this.renderer.scene);
+    this.doorRenderer = new DoorRenderer(this.renderer.scene, this.doorTextures);
     for (const e of this.world.entities) {
       if (e instanceof Enemy) this.billboards.add(e);
+      if (e instanceof Door) this.doorRenderer.add(e);
     }
 
     this.dead = false;
@@ -302,6 +315,7 @@ export class Game {
   private render(dt: number): void {
     this.renderer.setCamera(this.player.position, this.player.yaw, this.player.pitch, PLAYER_EYE_HEIGHT);
     this.billboards.update(dt, this.renderer.camera);
+    this.doorRenderer.update();
     const promptVisible = !!this.world
       .overlapCircle(this.player.position, 1.5)
       .find((e) => e instanceof Door);
