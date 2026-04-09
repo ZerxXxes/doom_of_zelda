@@ -6,7 +6,7 @@ function newPlayer() {
 }
 
 describe('Player state', () => {
-  it('starts at full health, full magic, with sword unlocked', () => {
+  it('starts at full health, full magic, with all weapons unlocked', () => {
     const p = newPlayer();
     expect(p.health).toBe(12);
     expect(p.maxHealth).toBe(12);
@@ -16,7 +16,9 @@ describe('Player state', () => {
     expect(p.bombs).toBe(5);
     expect(p.hasSmallKey).toBe(false);
     expect(p.unlockedWeapons.has(0)).toBe(true);
-    expect(p.unlockedWeapons.has(1)).toBe(false);
+    expect(p.unlockedWeapons.has(1)).toBe(true);
+    expect(p.unlockedWeapons.has(2)).toBe(true);
+    expect(p.unlockedWeapons.has(3)).toBe(true);
     expect(p.currentWeapon).toBe(0);
   });
 });
@@ -130,7 +132,7 @@ describe('Player.applyPickup', () => {
 describe('Player.selectWeapon', () => {
   it('does nothing if weapon is not unlocked', () => {
     const p = newPlayer();
-    p.selectWeapon(2);
+    p.selectWeapon(99);
     expect(p.currentWeapon).toBe(0);
   });
 

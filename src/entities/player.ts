@@ -19,7 +19,7 @@ export class Player extends Entity {
   bombs = 5;
   maxBombs = 15;
   hasSmallKey = false;
-  unlockedWeapons = new Set<number>([0]);
+  unlockedWeapons = new Set<number>([0, 1, 2, 3]);
   currentWeapon = 0;
   iframesRemaining = 0;
   pitch = 0;

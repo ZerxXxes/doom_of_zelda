@@ -266,6 +266,7 @@ export class Game {
       const w = this.weapons[this.player.currentWeapon];
       if (w.canFire(this.player)) {
         w.fire(this.player, this.world);
+        this.hud.triggerAttack(this.player.currentWeapon);
         playSound('sword_swing');
       }
     }

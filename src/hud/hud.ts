@@ -33,6 +33,20 @@ function colorKeyToDataURL(url: string, keyR = 255, keyG = 0, keyB = 255, tolera
   });
 }
 
+const WEAPON_BASE_TRANSFORMS = [
+  'translateX(-50%) rotate(35deg)',    // sword — tilted right
+  'translateX(-50%) rotate(15deg)',    // bow — slight tilt
+  'translateX(-50%) rotate(0deg)',     // bomb — upright
+  'translateX(-50%) rotate(20deg)',    // fire rod — moderate tilt
+];
+
+const WEAPON_ATTACK_TRANSFORMS = [
+  'translateX(-70%) rotate(-25deg)',   // sword — swings left (slash)
+  'translateX(-50%) rotate(15deg) translateY(20px)',  // bow — pulls down (draw)
+  'translateX(-50%) rotate(0deg) translateY(-50px)',  // bomb — tosses up
+  'translateX(-40%) rotate(10deg) scale(1.15)',       // fire rod — jabs forward
+];
+
 export class Hud {
   private root: HTMLElement;
   private heartsEl: HTMLElement;
@@ -48,6 +62,8 @@ export class Hud {
   private diedEl: HTMLElement | null = null;
   private wonEl: HTMLElement | null = null;
   private lockedFlashTimer = 0;
+  private attackTimer = 0;
+  private currentAttackWeapon = -1;
   private weaponImages: string[] = [];
 
   constructor() {
@@ -101,12 +117,30 @@ export class Hud {
     this.arrowEl.textContent = String(player.arrows);
     this.bombEl.textContent = String(player.bombs);
     this.weaponEl.textContent = ['Sword', 'Bow', 'Bombs', 'Fire Rod'][player.currentWeapon];
+    // Attack animation timer
+    if (this.attackTimer > 0) {
+      this.attackTimer -= dt;
+      if (this.attackTimer <= 0) {
+        this.attackTimer = 0;
+        this.currentAttackWeapon = -1;
+      }
+    }
+
+    // Viewmodel: set weapon image and transform
     if (this.weaponImages.length > 0) {
       const idx = player.currentWeapon;
       this.viewmodelEl.style.backgroundImage = `url(${this.weaponImages[idx]})`;
       this.viewmodelEl.style.backgroundSize = 'contain';
       this.viewmodelEl.style.backgroundRepeat = 'no-repeat';
       this.viewmodelEl.style.backgroundPosition = 'center bottom';
+    }
+    // Only set base transform when NOT in attack animation (CSS transition handles the swing back)
+    if (this.attackTimer <= 0) {
+      this.viewmodelEl.style.transform = WEAPON_BASE_TRANSFORMS[player.currentWeapon] ?? WEAPON_BASE_TRANSFORMS[0];
+    } else {
+      // Keep showing the attack transform for the weapon that triggered it
+      const slot = this.currentAttackWeapon;
+      this.viewmodelEl.style.transform = WEAPON_ATTACK_TRANSFORMS[slot] ?? WEAPON_ATTACK_TRANSFORMS[0];
     }
     this.promptEl.style.display = doorPromptVisible ? 'block' : 'none';
 
@@ -120,6 +154,12 @@ export class Hud {
     } else {
       this.vignetteEl.classList.remove('flash');
     }
+  }
+
+  triggerAttack(weaponSlot: number): void {
+    this.attackTimer = 0.15; // duration of the attack swing
+    this.currentAttackWeapon = weaponSlot;
+    this.viewmodelEl.style.transform = WEAPON_ATTACK_TRANSFORMS[weaponSlot] ?? WEAPON_ATTACK_TRANSFORMS[0];
   }
 
   showLocked(): void {

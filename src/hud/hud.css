@@ -97,11 +97,13 @@
 .hud-viewmodel {
   position: absolute;
   bottom: 0;
-  left: 50%;
+  left: 40%;
   width: 200px;
   height: 200px;
-  transform: translateX(-50%);
+  transform-origin: center bottom;
   background: transparent;
+  transition: transform 0.15s ease-out;
+  image-rendering: pixelated;
 }
 
 .hud-damage-vignette {
