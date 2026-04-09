@@ -22,7 +22,7 @@ import { Cell } from './level/cell';
 import { makeAABB, aabbOverlaps } from './math/aabb';
 import { fromYaw } from './math/vec2';
 import { buildLevelMesh, LevelMesh, LevelTextures } from './render/level-mesh';
-import { loadTexture, loadTextureColorKeyed, sliceSpriteStrip, loadImageColorKeyed, sliceSpriteStripExact } from './render/sprite-atlas';
+import { loadTexture, loadTextureColorKeyed, sliceSpriteStrip, loadImageColorKeyed, autoSliceSpriteStrip } from './render/sprite-atlas';
 import { BillboardManager, KnightTextures } from './render/billboard';
 import { ProjectileRenderer } from './render/projectile-render';
 import { DoorRenderer } from './render/door-render';
@@ -104,7 +104,8 @@ export class Game {
     const deathStripTex = await loadTexture('sprites/Enemy Death Effects.png');
     this.deathEffectFrames = sliceSpriteStrip(deathStripTex, 7);
     const bombCanvas = await loadImageColorKeyed('sprites/bomb_animation.png');
-    this.bombAnimFrames = sliceSpriteStripExact(bombCanvas, 16);
+    this.bombAnimFrames = autoSliceSpriteStrip(bombCanvas);
+    console.log(`Bomb animation: ${this.bombAnimFrames.length} frames detected`);
     const doorTexture = await loadTextureColorKeyed('sprites/open_door_blue.png');
     this.doorTexture = doorTexture;
     const statueTexture = await loadTextureColorKeyed('sprites/statue.png');

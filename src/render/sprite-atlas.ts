@@ -158,6 +158,62 @@ export function loadImageColorKeyed(
   });
 }
 
+/**
+ * Auto-detect and slice a horizontal sprite strip with variable-width frames.
+ * Frames are separated by fully-transparent columns (after color keying).
+ * Each frame is extracted to its own CanvasTexture at its actual pixel size.
+ */
+export function autoSliceSpriteStrip(canvas: HTMLCanvasElement): THREE.Texture[] {
+  const ctx = canvas.getContext('2d')!;
+  const { width, height } = canvas;
+  const data = ctx.getImageData(0, 0, width, height);
+  const px = data.data;
+
+  // Scan for frame boundaries: columns where ALL pixels are transparent
+  const isEmptyCol = (col: number): boolean => {
+    for (let y = 0; y < height; y++) {
+      if (px[(y * width + col) * 4 + 3] > 0) return false;
+    }
+    return true;
+  };
+
+  // Collect frame rectangles (x offset + width)
+  const rects: { x: number; w: number }[] = [];
+  let inFrame = false;
+  let frameStart = 0;
+  for (let col = 0; col < width; col++) {
+    const empty = isEmptyCol(col);
+    if (!empty && !inFrame) {
+      inFrame = true;
+      frameStart = col;
+    } else if (empty && inFrame) {
+      inFrame = false;
+      rects.push({ x: frameStart, w: col - frameStart });
+    }
+  }
+  if (inFrame) {
+    rects.push({ x: frameStart, w: width - frameStart });
+  }
+
+  // Create one CanvasTexture per frame at its actual pixel dimensions
+  const textures: THREE.Texture[] = [];
+  for (const rect of rects) {
+    const fCanvas = document.createElement('canvas');
+    fCanvas.width = rect.w;
+    fCanvas.height = height;
+    const fCtx = fCanvas.getContext('2d')!;
+    fCtx.drawImage(canvas, rect.x, 0, rect.w, height, 0, 0, rect.w, height);
+    const tex = new THREE.CanvasTexture(fCanvas);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.generateMipmaps = false;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    textures.push(tex);
+  }
+
+  return textures;
+}
+
 export function frameToUV(frame: SpriteFrame, atlasW: number, atlasH: number): { u: number; v: number; w: number; h: number } {
   return {
     u: frame.u / atlasW,
