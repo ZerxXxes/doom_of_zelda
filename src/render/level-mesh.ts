@@ -64,13 +64,13 @@ export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh
       const cell = level.grid.get(x, z);
       if (isSolid(cell)) continue;
 
-      // Floor quad
+      // Floor quad (winding reversed so normal faces +Y toward the camera)
       pushQuad(
         floorPositions, floorUVs, floorIndices, floorVertexCount,
-        [x * cs,       0, z * cs],
-        [(x + 1) * cs, 0, z * cs],
-        [(x + 1) * cs, 0, (z + 1) * cs],
         [x * cs,       0, (z + 1) * cs],
+        [(x + 1) * cs, 0, (z + 1) * cs],
+        [(x + 1) * cs, 0, z * cs],
+        [x * cs,       0, z * cs],
         1, 1,
       );
       floorVertexCount += 4;

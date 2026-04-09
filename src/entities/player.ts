@@ -3,7 +3,7 @@ import { Entity } from './entity';
 import { World } from './world';
 import { SpawnPickup } from '../level/level';
 
-export const PLAYER_HALF_EXTENTS: Vec2 = { x: 0.3, z: 0.3 };
+export const PLAYER_HALF_EXTENTS: Vec2 = { x: 0.15, z: 0.15 };
 export const PLAYER_EYE_HEIGHT = 1.5;
 export const IFRAME_DURATION = 0.8;
 
