@@ -112,6 +112,43 @@ export class Bomb extends Entity {
   }
 }
 
+export const ARROW_SPEED = 60;
+export const ARROW_STUCK_DURATION = 3.0;
+export const ARROW_DAMAGE = 2; // matches BOW_DAMAGE
+
+export class Arrow extends Entity {
+  velocity: Vec2;
+  damage = ARROW_DAMAGE;
+  stuck = false;
+  stuckTimer = ARROW_STUCK_DURATION;
+
+  constructor(position: Vec2, direction: Vec2) {
+    super(position, { x: 0.15, z: 0.15 });
+    const len = Math.sqrt(direction.x * direction.x + direction.z * direction.z) || 1;
+    this.velocity = { x: (direction.x / len) * ARROW_SPEED, z: (direction.z / len) * ARROW_SPEED };
+  }
+
+  update(dt: number, world: World): void {
+    if (this.stuck) {
+      this.stuckTimer -= dt;
+      if (this.stuckTimer <= 0) {
+        this.alive = false;
+      }
+      return;
+    }
+    // Move
+    this.position = add(this.position, scale(this.velocity, dt));
+    // Wall collision
+    const cs = world.cellSize;
+    const cx = Math.floor(this.position.x / cs);
+    const cz = Math.floor(this.position.z / cs);
+    if (isSolid(world.grid.get(cx, cz))) {
+      this.stuck = true;
+      this.velocity = { x: 0, z: 0 };
+    }
+  }
+}
+
 export class FireBolt extends Entity {
   velocity: Vec2;
   lifetime = FIREBOLT_LIFETIME;

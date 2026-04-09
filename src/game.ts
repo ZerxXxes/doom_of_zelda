@@ -12,7 +12,7 @@ import { Sword } from './weapons/sword';
 import { Bow } from './weapons/bow';
 import { Bombs } from './weapons/bombs';
 import { FireRod } from './weapons/fire-rod';
-import { Bomb, FireBolt } from './entities/projectile';
+import { Bomb, FireBolt, Arrow } from './entities/projectile';
 import { Input } from './input';
 import { Hud } from './hud/hud';
 import { Level, LevelJson } from './level/level';
@@ -53,6 +53,8 @@ export class Game {
   private doorTexture!: THREE.Texture;
   private doorRenderer!: DoorRenderer;
   private statueTexture!: THREE.Texture;
+  private arrowTex!: THREE.Texture;
+  private arrowStuckTex!: THREE.Texture;
   private decorationRenderer!: DecorationRenderer;
   private lastTime = 0;
   private dead = false;
@@ -129,6 +131,12 @@ export class Game {
     this.doorTexture = doorTexture;
     const statueTexture = await loadTextureColorKeyed('sprites/statue.png');
     this.statueTexture = statueTexture;
+    const [arrowTex, arrowStuckTex] = await Promise.all([
+      loadTextureColorKeyed('sprites/arrow.png'),
+      loadTextureColorKeyed('sprites/arrow_stuck.png'),
+    ]);
+    this.arrowTex = arrowTex;
+    this.arrowStuckTex = arrowStuckTex;
     this.hud.loadWeaponSprites();
     this.loadLevel();
     requestAnimationFrame((t) => this.tick(t));
@@ -187,7 +195,7 @@ export class Game {
     this.renderer.applyAmbient(this.level.ambient);
 
     this.billboards = new BillboardManager(this.renderer.scene, this.knightTextures, this.deathEffectFrames);
-    this.projectileRenderer = new ProjectileRenderer(this.renderer.scene, this.bombAnimFrames);
+    this.projectileRenderer = new ProjectileRenderer(this.renderer.scene, this.bombAnimFrames, this.arrowTex, this.arrowStuckTex);
     this.doorRenderer = new DoorRenderer(this.renderer.scene, this.doorTexture);
     for (const e of this.world.entities) {
       if (e instanceof Enemy) this.billboards.add(e);
@@ -341,6 +349,18 @@ export class Game {
         if (target instanceof Enemy && aabbOverlaps(e.getAABB(), target.getAABB())) {
           target.takeDamage(e.damage);
           e.alive = false;
+          break;
+        }
+      }
+    }
+
+    // Arrow vs Enemy collision
+    for (const e of this.world.entities) {
+      if (!(e instanceof Arrow) || e.stuck) continue;
+      for (const target of this.world.entities) {
+        if (target instanceof Enemy && aabbOverlaps(e.getAABB(), target.getAABB())) {
+          target.takeDamage(e.damage);
+          e.alive = false; // arrow disappears on enemy hit
           break;
         }
       }

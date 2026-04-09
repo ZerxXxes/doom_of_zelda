@@ -1,16 +1,26 @@
 import * as THREE from 'three';
-import { Bomb, FireBolt, BOMB_FUSE_DURATION } from '../entities/projectile';
+import { Bomb, FireBolt, Arrow, BOMB_FUSE_DURATION } from '../entities/projectile';
 import { World } from '../entities/world';
 
 export class ProjectileRenderer {
   private bombVisuals = new Map<Bomb, THREE.Sprite>();
   private fireMeshes = new Map<FireBolt, THREE.Mesh>();
+  private arrowVisuals = new Map<Arrow, THREE.Sprite>();
   private bombFrames: THREE.Texture[];
+  private arrowTex: THREE.Texture;
+  private arrowStuckTex: THREE.Texture;
   private fireGeo = new THREE.SphereGeometry(0.15, 8, 6);
   private fireMat = new THREE.MeshBasicMaterial({ color: 0xffaa22 });
 
-  constructor(private scene: THREE.Scene, bombFrames: THREE.Texture[]) {
+  constructor(
+    private scene: THREE.Scene,
+    bombFrames: THREE.Texture[],
+    arrowTex: THREE.Texture,
+    arrowStuckTex: THREE.Texture,
+  ) {
     this.bombFrames = bombFrames;
+    this.arrowTex = arrowTex;
+    this.arrowStuckTex = arrowStuckTex;
   }
 
   sync(world: World): void {
@@ -31,6 +41,17 @@ export class ProjectileRenderer {
         const m = new THREE.Mesh(this.fireGeo, this.fireMat);
         this.scene.add(m);
         this.fireMeshes.set(e, m);
+      }
+      if (e instanceof Arrow && !this.arrowVisuals.has(e)) {
+        const mat = new THREE.SpriteMaterial({
+          map: this.arrowTex,
+          transparent: true,
+          depthTest: true,
+        });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(0.4, 0.8, 1);
+        this.scene.add(sprite);
+        this.arrowVisuals.set(e, sprite);
       }
     }
 
@@ -75,6 +96,17 @@ export class ProjectileRenderer {
       mesh.position.set(f.position.x, 1.0, f.position.z);
     }
 
+    // Update arrows
+    for (const [a, sprite] of this.arrowVisuals) {
+      sprite.position.set(a.position.x, 1.0, a.position.z);
+      const mat = sprite.material as THREE.SpriteMaterial;
+      if (a.stuck && mat.map !== this.arrowStuckTex) {
+        mat.map = this.arrowStuckTex;
+        mat.needsUpdate = true;
+        sprite.scale.set(0.4, 0.6, 1); // stuck arrow is slightly shorter
+      }
+    }
+
     // Remove dead
     for (const [b, sprite] of this.bombVisuals) {
       if (!b.alive) {
@@ -87,6 +119,13 @@ export class ProjectileRenderer {
       if (!f.alive) {
         this.scene.remove(mesh);
         this.fireMeshes.delete(f);
+      }
+    }
+    for (const [a, sprite] of this.arrowVisuals) {
+      if (!a.alive) {
+        this.scene.remove(sprite);
+        sprite.material.dispose();
+        this.arrowVisuals.delete(a);
       }
     }
   }
