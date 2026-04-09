@@ -118,6 +118,8 @@ export const ARROW_DAMAGE = 2; // matches BOW_DAMAGE
 
 export class Arrow extends Entity {
   velocity: Vec2;
+  /** Normalized flight direction, preserved after sticking so the renderer can orient the sprite. */
+  flightDir: Vec2;
   damage = ARROW_DAMAGE;
   stuck = false;
   stuckTimer = ARROW_STUCK_DURATION;
@@ -125,7 +127,8 @@ export class Arrow extends Entity {
   constructor(position: Vec2, direction: Vec2) {
     super(position, { x: 0.15, z: 0.15 });
     const len = Math.sqrt(direction.x * direction.x + direction.z * direction.z) || 1;
-    this.velocity = { x: (direction.x / len) * ARROW_SPEED, z: (direction.z / len) * ARROW_SPEED };
+    this.flightDir = { x: direction.x / len, z: direction.z / len };
+    this.velocity = { x: this.flightDir.x * ARROW_SPEED, z: this.flightDir.z * ARROW_SPEED };
   }
 
   update(dt: number, world: World): void {

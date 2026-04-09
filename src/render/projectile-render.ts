@@ -23,7 +23,7 @@ export class ProjectileRenderer {
     this.arrowStuckTex = arrowStuckTex;
   }
 
-  sync(world: World): void {
+  sync(world: World, camera: THREE.Camera): void {
     // Add new bombs
     for (const e of world.entities) {
       if (e instanceof Bomb && !this.bombVisuals.has(e)) {
@@ -96,15 +96,28 @@ export class ProjectileRenderer {
       mesh.position.set(f.position.x, 1.0, f.position.z);
     }
 
-    // Update arrows
+    // Update arrows — rotate sprite so arrowhead points in flight direction on screen
+    const _arrowPos = new THREE.Vector3();
+    const _tipPos = new THREE.Vector3();
     for (const [a, sprite] of this.arrowVisuals) {
       sprite.position.set(a.position.x, 1.0, a.position.z);
       const mat = sprite.material as THREE.SpriteMaterial;
       if (a.stuck && mat.map !== this.arrowStuckTex) {
         mat.map = this.arrowStuckTex;
         mat.needsUpdate = true;
-        sprite.scale.set(0.4, 0.6, 1); // stuck arrow is slightly shorter
+        sprite.scale.set(0.4, 0.6, 1);
       }
+      // Project flight direction onto screen to compute sprite rotation
+      _arrowPos.set(a.position.x, 1.0, a.position.z).project(camera);
+      _tipPos.set(
+        a.position.x + a.flightDir.x * 0.5,
+        1.0,
+        a.position.z + a.flightDir.z * 0.5,
+      ).project(camera);
+      const dx = _tipPos.x - _arrowPos.x;
+      const dy = _tipPos.y - _arrowPos.y;
+      // Arrow image has tip at top (screen +Y = angle π/2 from +X)
+      mat.rotation = Math.atan2(dy, dx) - Math.PI / 2;
     }
 
     // Remove dead

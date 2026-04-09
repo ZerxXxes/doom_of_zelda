@@ -247,7 +247,7 @@ export class Game {
     }
 
     this.billboards.removeDead();
-    this.projectileRenderer.sync(this.world);
+    this.projectileRenderer.sync(this.world, this.renderer.camera);
     this.checkWinLose();
     this.render(dt);
   }
