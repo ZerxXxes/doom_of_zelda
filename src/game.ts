@@ -22,7 +22,7 @@ import { Cell } from './level/cell';
 import { makeAABB, aabbOverlaps } from './math/aabb';
 import { fromYaw } from './math/vec2';
 import { buildLevelMesh, LevelMesh, LevelTextures } from './render/level-mesh';
-import { loadTexture, loadTextureColorKeyed, sliceSpriteStrip, loadImageColorKeyed, autoSliceSpriteStrip } from './render/sprite-atlas';
+import { loadTexture, loadTextureColorKeyed, sliceSpriteStrip, loadImageColorKeyed, sliceByRects } from './render/sprite-atlas';
 import { BillboardManager, KnightTextures } from './render/billboard';
 import { ProjectileRenderer } from './render/projectile-render';
 import { DoorRenderer } from './render/door-render';
@@ -104,8 +104,27 @@ export class Game {
     const deathStripTex = await loadTexture('sprites/Enemy Death Effects.png');
     this.deathEffectFrames = sliceSpriteStrip(deathStripTex, 7);
     const bombCanvas = await loadImageColorKeyed('sprites/bomb_animation.png');
-    this.bombAnimFrames = autoSliceSpriteStrip(bombCanvas);
-    console.log(`Bomb animation: ${this.bombAnimFrames.length} frames detected`);
+    // Exact pixel rects for the 16 bomb frames (8 bomb blink + 8 explosion)
+    this.bombAnimFrames = sliceByRects(bombCanvas, [
+      // 8 bomb frames (14x13 each, blinking stages)
+      { x: 3,   y: 19, w: 14, h: 13 },
+      { x: 23,  y: 19, w: 14, h: 13 },
+      { x: 43,  y: 19, w: 14, h: 13 },
+      { x: 63,  y: 19, w: 14, h: 13 },
+      { x: 83,  y: 19, w: 14, h: 13 },
+      { x: 103, y: 19, w: 14, h: 13 },
+      { x: 123, y: 19, w: 14, h: 13 },
+      { x: 143, y: 19, w: 14, h: 13 },
+      // 8 explosion frames (variable size)
+      { x: 161, y: 20, w: 14, h: 15 },
+      { x: 178, y: 9,  w: 30, h: 30 },
+      { x: 211, y: 8,  w: 30, h: 32 },
+      { x: 244, y: 0,  w: 44, h: 46 },
+      { x: 291, y: 10, w: 28, h: 30 },
+      { x: 322, y: 4,  w: 39, h: 39 },
+      { x: 364, y: 2,  w: 42, h: 41 },
+      { x: 409, y: 8,  w: 43, h: 38 },
+    ]);
     const doorTexture = await loadTextureColorKeyed('sprites/open_door_blue.png');
     this.doorTexture = doorTexture;
     const statueTexture = await loadTextureColorKeyed('sprites/statue.png');

@@ -214,6 +214,36 @@ export function autoSliceSpriteStrip(canvas: HTMLCanvasElement): THREE.Texture[]
   return textures;
 }
 
+export interface FrameRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * Slice a sprite sheet using explicit pixel rectangles per frame.
+ * Each frame is extracted to its own CanvasTexture at the rect's exact size.
+ */
+export function sliceByRects(
+  canvas: HTMLCanvasElement,
+  rects: FrameRect[],
+): THREE.Texture[] {
+  return rects.map((r) => {
+    const fCanvas = document.createElement('canvas');
+    fCanvas.width = r.w;
+    fCanvas.height = r.h;
+    const ctx = fCanvas.getContext('2d')!;
+    ctx.drawImage(canvas, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+    const tex = new THREE.CanvasTexture(fCanvas);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.generateMipmaps = false;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  });
+}
+
 export function frameToUV(frame: SpriteFrame, atlasW: number, atlasH: number): { u: number; v: number; w: number; h: number } {
   return {
     u: frame.u / atlasW,

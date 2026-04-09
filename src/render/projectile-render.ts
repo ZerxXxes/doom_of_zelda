@@ -34,44 +34,34 @@ export class ProjectileRenderer {
       }
     }
 
-    // Update bombs
+    // Update bombs — 16 frames: 0-7 bomb blink, 8-15 explosion
     for (const [b, sprite] of this.bombVisuals) {
-      // Y position from the bomb's actual height
       sprite.position.set(b.position.x, b.height + 0.3, b.position.z);
 
       const mat = sprite.material as THREE.SpriteMaterial;
       let frameIndex: number;
 
-      const totalFrames = this.bombFrames.length;
-      // Divide frames into phases: first ~35% are static bomb, next ~20% are blink, last ~45% are explosion
-      const bombEndFrame = Math.floor(totalFrames * 0.35);
-      const blinkEndFrame = Math.floor(totalFrames * 0.55);
-
       if (b.detonated) {
-        // Explosion: blinkEndFrame to end
+        // Explosion phase: cycle through frames 8-15
         const progress = 1 - (b.explosionTimer / Bomb.EXPLOSION_DURATION);
-        const explosionFrameCount = totalFrames - blinkEndFrame;
-        frameIndex = blinkEndFrame + Math.min(Math.floor(progress * explosionFrameCount), explosionFrameCount - 1);
+        frameIndex = 8 + Math.min(Math.floor(progress * 8), 7);
         sprite.scale.set(2.5, 2.5, 1);
       } else if (!b.grounded) {
-        // Flying: show frame 0
+        // Flying through the air: static bomb frame 0
         frameIndex = 0;
         sprite.scale.set(0.8, 0.8, 1);
       } else {
-        // Grounded with fuse burning
-        const fuseProgress = 1 - (b.fuseTimer / BOMB_FUSE_DURATION); // 0 to 1
-        if (fuseProgress < 0.5) {
-          // First half: static bomb
+        // Grounded, fuse burning
+        const fuseProgress = 1 - (b.fuseTimer / BOMB_FUSE_DURATION); // 0→1
+        if (fuseProgress < 0.4) {
+          // First 40%: static bomb
           frameIndex = 0;
         } else {
-          // Second half: blink through blink frames
-          const blinkFrameCount = blinkEndFrame - bombEndFrame;
-          if (blinkFrameCount > 0) {
-            const blinkTime = (fuseProgress - 0.5) * BOMB_FUSE_DURATION;
-            frameIndex = bombEndFrame + (Math.floor(blinkTime * 8) % blinkFrameCount);
-          } else {
-            frameIndex = 0;
-          }
+          // Last 60%: blink through frames 0-7 (increasingly fast)
+          const blinkTime = (fuseProgress - 0.4) / 0.6; // 0→1 within blink phase
+          const blinkSpeed = 4 + blinkTime * 12; // accelerate from 4fps to 16fps
+          const elapsed = (fuseProgress - 0.4) * BOMB_FUSE_DURATION;
+          frameIndex = Math.floor(elapsed * blinkSpeed) % 8;
         }
         sprite.scale.set(0.8, 0.8, 1);
       }
