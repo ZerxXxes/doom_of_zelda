@@ -48,6 +48,8 @@ export class Game {
   private knightTextures!: KnightTextures;
   private doorTextures!: DoorTextures;
   private doorRenderer!: DoorRenderer;
+  private statueTexture!: THREE.Texture;
+  private decorationRenderer!: DecorationRenderer;
   private lastTime = 0;
   private dead = false;
   private won = false;
@@ -100,6 +102,8 @@ export class Game {
       loadTextureColorKeyed('sprites/open_door_blue.png'),
     ]);
     this.doorTextures = { locked: doorLocked, unlocked: doorUnlocked, open: doorOpen };
+    const statueTexture = await loadTextureColorKeyed('sprites/statue.png');
+    this.statueTexture = statueTexture;
     this.loadLevel();
     requestAnimationFrame((t) => this.tick(t));
   }
@@ -133,6 +137,16 @@ export class Game {
       const dx = (d.x + 0.5) * this.level.gridSize;
       const dz = (d.z + 0.5) * this.level.gridSize;
       this.world.add(new Door({ x: dx, z: dz }, d.locked, d.x, d.z));
+    }
+
+    this.decorationRenderer = new DecorationRenderer(this.renderer.scene, this.statueTexture);
+    for (const d of this.level.spawns.decorations) {
+      const dec = new Decoration(
+        { x: d.x * this.level.gridSize, z: d.z * this.level.gridSize },
+        d.type,
+      );
+      this.world.add(dec);
+      this.decorationRenderer.add(dec);
     }
 
     if (this.levelMesh) {

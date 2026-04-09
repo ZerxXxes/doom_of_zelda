@@ -40,6 +40,12 @@ export interface DoorSpawn {
   locked: boolean;
 }
 
+export interface SpawnDecoration {
+  type: string;
+  x: number;
+  z: number;
+}
+
 export interface Level {
   name: string;
   theme: string;
@@ -52,6 +58,7 @@ export interface Level {
     enemies: SpawnEnemy[];
     pickups: SpawnPickup[];
     doors: DoorSpawn[];
+    decorations: SpawnDecoration[];
   };
   ambient: AmbientSettings;
 }
@@ -68,6 +75,7 @@ export interface LevelJson {
     player: SpawnPlayer;
     enemies: SpawnEnemy[];
     pickups: SpawnPickup[];
+    decorations?: SpawnDecoration[];
   };
   ambient: AmbientSettings;
 }

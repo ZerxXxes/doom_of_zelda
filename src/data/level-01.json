@@ -61,6 +61,12 @@
       { "type": "blue_knight", "x": 22, "z": 19 },
       { "type": "purple_knight", "x": 20, "z": 28 }
     ],
+    "decorations": [
+      { "type": "statue", "x": 5, "z": 5 },
+      { "type": "statue", "x": 8, "z": 5 },
+      { "type": "statue", "x": 5, "z": 17 },
+      { "type": "statue", "x": 8, "z": 17 }
+    ],
     "pickups": [
       { "type": "weapon_bow", "x": 14, "z": 3 },
       { "type": "weapon_bombs", "x": 8, "z": 14 },

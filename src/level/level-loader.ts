@@ -61,6 +61,7 @@ export function loadLevel(json: LevelJson): Level {
       enemies: json.spawns.enemies,
       pickups: json.spawns.pickups,
       doors,
+      decorations: json.spawns.decorations ?? [],
     },
     ambient: json.ambient,
   };
