@@ -138,11 +138,18 @@ export class Arrow extends Entity {
     }
     // Move
     this.position = add(this.position, scale(this.velocity, dt));
-    // Wall collision
+    // Wall collision — step back to the wall surface so sprite stays visible
     const cs = world.cellSize;
     const cx = Math.floor(this.position.x / cs);
     const cz = Math.floor(this.position.z / cs);
     if (isSolid(world.grid.get(cx, cz))) {
+      const len = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
+      if (len > 0) {
+        this.position = {
+          x: this.position.x - (this.velocity.x / len) * 0.2,
+          z: this.position.z - (this.velocity.z / len) * 0.2,
+        };
+      }
       this.stuck = true;
       this.velocity = { x: 0, z: 0 };
     }
