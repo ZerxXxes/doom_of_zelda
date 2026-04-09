@@ -2,17 +2,17 @@ import * as THREE from 'three';
 import { Enemy, GreenKnight, BlueKnight, RedKnight, PurpleKnight } from '../entities/enemy';
 import { sub, dot, crossZ, normalize, fromYaw } from '../math/vec2';
 
-const FRONT_FRAME_FPS = 6;
+const ANIM_FPS = 6;
 
 export interface KnightTextures {
   /** Walking-animation frames shown when the camera is in front of the enemy. */
   frontFrames: THREE.Texture[];
-  /** Side view, used when the camera is on the enemy's left side. */
-  sideLeft: THREE.Texture;
-  /** Side view, pre-flipped horizontally for the enemy's right side. */
-  sideRight: THREE.Texture;
-  /** Static back view. */
-  back: THREE.Texture;
+  /** Side view frames, used when the camera is on the enemy's left side. */
+  sideLeftFrames: THREE.Texture[];
+  /** Side view frames, pre-flipped horizontally for the enemy's right side. */
+  sideRightFrames: THREE.Texture[];
+  /** Back view animation frames. */
+  backFrames: THREE.Texture[];
 }
 
 type Facing = 'front' | 'side-left' | 'side-right' | 'back';
@@ -75,10 +75,14 @@ export class BillboardManager {
       v.sprite.position.set(v.enemy.position.x, 0.85, v.enemy.position.z);
 
       const facing = this.pickFacing(v.enemy, camPos);
-      const frameIndex =
-        facing === 'front'
-          ? Math.floor(v.animTime * FRONT_FRAME_FPS) % this.textures.frontFrames.length
-          : 0;
+      let frames: THREE.Texture[];
+      switch (facing) {
+        case 'front': frames = this.textures.frontFrames; break;
+        case 'side-left': frames = this.textures.sideLeftFrames; break;
+        case 'side-right': frames = this.textures.sideRightFrames; break;
+        case 'back': frames = this.textures.backFrames; break;
+      }
+      const frameIndex = Math.floor(v.animTime * ANIM_FPS) % frames.length;
 
       if (facing !== v.currentFacing || frameIndex !== v.currentFrameIndex) {
         this.applyTexture(v.sprite, facing, frameIndex);
@@ -108,22 +112,14 @@ export class BillboardManager {
 
   private applyTexture(sprite: THREE.Sprite, facing: Facing, frameIndex: number): void {
     const mat = sprite.material as THREE.SpriteMaterial;
-    let tex: THREE.Texture;
+    let frames: THREE.Texture[];
     switch (facing) {
-      case 'front':
-        tex = this.textures.frontFrames[frameIndex];
-        break;
-      case 'side-left':
-        tex = this.textures.sideLeft;
-        break;
-      case 'side-right':
-        tex = this.textures.sideRight;
-        break;
-      case 'back':
-        tex = this.textures.back;
-        break;
+      case 'front': frames = this.textures.frontFrames; break;
+      case 'side-left': frames = this.textures.sideLeftFrames; break;
+      case 'side-right': frames = this.textures.sideRightFrames; break;
+      case 'back': frames = this.textures.backFrames; break;
     }
-    mat.map = tex;
+    mat.map = frames[frameIndex];
     mat.needsUpdate = true;
   }
 }

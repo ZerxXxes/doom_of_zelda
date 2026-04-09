@@ -59,26 +59,34 @@ export class Game {
 
   async start(): Promise<void> {
     this.dungeonTexture = await loadTexture('sprites/dungeon-tiles.png');
-    const [f1, f2, f3, f4, side, back] = await Promise.all([
+    const [f1, f2, f3, f4, s1, s2, s3, b1, b2, b3, b4] = await Promise.all([
       loadTextureColorKeyed('sprites/blue_knight_front_1.png'),
       loadTextureColorKeyed('sprites/blue_knight_front_2.png'),
       loadTextureColorKeyed('sprites/blue_knight_front_3.png'),
       loadTextureColorKeyed('sprites/blue_knight_front_4.png'),
-      loadTextureColorKeyed('sprites/blue_knight_side.png'),
-      loadTextureColorKeyed('sprites/blue_knight_back.png'),
+      loadTextureColorKeyed('sprites/blue_knight_side_1.png'),
+      loadTextureColorKeyed('sprites/blue_knight_side_2.png'),
+      loadTextureColorKeyed('sprites/blue_knight_side_3.png'),
+      loadTextureColorKeyed('sprites/blue_knight_back_1.png'),
+      loadTextureColorKeyed('sprites/blue_knight_back_2.png'),
+      loadTextureColorKeyed('sprites/blue_knight_back_3.png'),
+      loadTextureColorKeyed('sprites/blue_knight_back_4.png'),
     ]);
-    // Pre-flip the right-side variant once. Cloning the side texture and setting
-    // repeat.x = -1 / offset.x = 1 mirrors it horizontally without affecting the
-    // original (which is used for the left side).
-    const sideRight = side.clone();
-    sideRight.repeat.x = -1;
-    sideRight.offset.x = 1;
-    sideRight.needsUpdate = true;
+    // Pre-flip side frames for the right-side view. Cloning each texture and
+    // setting repeat.x = -1 / offset.x = 1 mirrors it horizontally without
+    // affecting the originals (which are used for the left side).
+    function flipTexture(tex: THREE.Texture): THREE.Texture {
+      const flipped = tex.clone();
+      flipped.repeat.x = -1;
+      flipped.offset.x = 1;
+      flipped.needsUpdate = true;
+      return flipped;
+    }
     this.knightTextures = {
       frontFrames: [f1, f2, f3, f4],
-      sideLeft: side,
-      sideRight,
-      back,
+      sideLeftFrames: [s1, s2, s3],
+      sideRightFrames: [s1, s2, s3].map(flipTexture),
+      backFrames: [b1, b2, b3, b4],
     };
     this.loadLevel();
     requestAnimationFrame((t) => this.tick(t));
