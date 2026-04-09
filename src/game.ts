@@ -32,6 +32,8 @@ import levelJsonRaw from './data/level-01.json';
 const MOVE_SPEED = 7;
 const MOUSE_SENSITIVITY = 0.0025;
 const MAX_DT = 1 / 30;
+const BOB_FREQUENCY = 10;    // oscillations per second at full speed
+const BOB_AMPLITUDE = 0.08;  // world units of vertical sway
 
 export class Game {
   private renderer: Renderer;
@@ -54,6 +56,7 @@ export class Game {
   private lastTime = 0;
   private dead = false;
   private won = false;
+  private bobPhase = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new Renderer(canvas);
@@ -63,7 +66,7 @@ export class Game {
 
   async start(): Promise<void> {
     const [dungeonWall, dungeonFloor, dungeonCeiling] = await Promise.all([
-      loadTexture('sprites/wall_tile_dark_blue.png'),
+      loadTexture('sprites/wall_tile_light_blue.png'),
       loadTexture('sprites/ground_tile_dark.png'),
       loadTexture('sprites/ground_tile_light.png'),
     ]);
@@ -240,6 +243,15 @@ export class Game {
       this.world.cellSize,
     );
 
+    // Doom-style view bob: advance phase when moving, decay to zero when still
+    const speed = Math.hypot(motion.x, motion.z) / (dt || 1);
+    if (speed > 0.5) {
+      this.bobPhase += dt * BOB_FREQUENCY;
+    } else {
+      // Smoothly settle back to zero when stopped
+      this.bobPhase *= 0.9;
+    }
+
     if (this.input.isDown('Digit1')) this.player.selectWeapon(0);
     if (this.input.isDown('Digit2')) this.player.selectWeapon(1);
     if (this.input.isDown('Digit3')) this.player.selectWeapon(2);
@@ -326,7 +338,8 @@ export class Game {
   }
 
   private render(dt: number): void {
-    this.renderer.setCamera(this.player.position, this.player.yaw, this.player.pitch, PLAYER_EYE_HEIGHT);
+    const bobOffset = Math.sin(this.bobPhase) * BOB_AMPLITUDE;
+    this.renderer.setCamera(this.player.position, this.player.yaw, this.player.pitch, PLAYER_EYE_HEIGHT + bobOffset);
     this.billboards.update(dt, this.renderer.camera);
     this.doorRenderer.update();
     const promptVisible = !!this.world
