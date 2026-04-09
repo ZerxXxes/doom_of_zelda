@@ -49,6 +49,7 @@ export class Game {
   private levelTextures!: LevelTextures;
   private knightTextures!: KnightTextures;
   private deathEffectFrames!: THREE.Texture[];
+  private bombAnimFrames!: THREE.Texture[];
   private doorTexture!: THREE.Texture;
   private doorRenderer!: DoorRenderer;
   private statueTexture!: THREE.Texture;
@@ -102,10 +103,13 @@ export class Game {
     };
     const deathStripTex = await loadTexture('sprites/Enemy Death Effects.png');
     this.deathEffectFrames = sliceSpriteStrip(deathStripTex, 7);
+    const bombStripTex = await loadTextureColorKeyed('sprites/bomb_animation.png');
+    this.bombAnimFrames = sliceSpriteStrip(bombStripTex, 16);
     const doorTexture = await loadTextureColorKeyed('sprites/open_door_blue.png');
     this.doorTexture = doorTexture;
     const statueTexture = await loadTextureColorKeyed('sprites/statue.png');
     this.statueTexture = statueTexture;
+    this.hud.loadWeaponSprites();
     this.loadLevel();
     requestAnimationFrame((t) => this.tick(t));
   }
@@ -163,7 +167,7 @@ export class Game {
     this.renderer.applyAmbient(this.level.ambient);
 
     this.billboards = new BillboardManager(this.renderer.scene, this.knightTextures, this.deathEffectFrames);
-    this.projectileRenderer = new ProjectileRenderer(this.renderer.scene);
+    this.projectileRenderer = new ProjectileRenderer(this.renderer.scene, this.bombAnimFrames);
     this.doorRenderer = new DoorRenderer(this.renderer.scene, this.doorTexture);
     for (const e of this.world.entities) {
       if (e instanceof Enemy) this.billboards.add(e);
@@ -193,12 +197,13 @@ export class Game {
     this.updateEntities(dt);
     this.handleCollisions();
 
-    // Detect bomb detonation by checking for newly-dead bombs
-    const bombsToDetonate = this.world.entities.filter((e) => e instanceof Bomb && !e.alive);
+    // Detect bomb detonation by checking for newly-detonated bombs
     let needMeshRebuild = false;
-    for (const _b of bombsToDetonate) {
-      needMeshRebuild = true;
-      break;
+    for (const e of this.world.entities) {
+      if (e instanceof Bomb && e.detonated && e.explosionTimer > Bomb.EXPLOSION_DURATION - 0.05) {
+        needMeshRebuild = true;
+        break;
+      }
     }
 
     this.world.removeDead();

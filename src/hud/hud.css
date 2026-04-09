@@ -101,11 +101,8 @@
   width: 200px;
   height: 200px;
   transform: translateX(-50%);
+  background: transparent;
 }
-.hud-viewmodel.sword { background: #4caf50; }
-.hud-viewmodel.bow { background: #8d6e63; }
-.hud-viewmodel.bombs { background: #424242; }
-.hud-viewmodel.fire-rod { background: #ff5722; }
 
 .hud-damage-vignette {
   position: fixed;

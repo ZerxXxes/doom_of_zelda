@@ -7,6 +7,32 @@ function el(tag: string, className?: string, text?: string): HTMLElement {
   return e;
 }
 
+function colorKeyToDataURL(url: string, keyR = 255, keyG = 0, keyB = 255, tolerance = 16): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('no 2d context')); return; }
+      ctx.drawImage(img, 0, 0);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const px = data.data;
+      for (let i = 0; i < px.length; i += 4) {
+        if (Math.abs(px[i] - keyR) <= tolerance && Math.abs(px[i + 1] - keyG) <= tolerance && Math.abs(px[i + 2] - keyB) <= tolerance) {
+          px[i + 3] = 0;
+        }
+      }
+      ctx.putImageData(data, 0, 0);
+      resolve(canvas.toDataURL());
+    };
+    img.onerror = () => reject(new Error(`Failed to load ${url}`));
+    img.src = url;
+  });
+}
+
 export class Hud {
   private root: HTMLElement;
   private heartsEl: HTMLElement;
@@ -22,6 +48,7 @@ export class Hud {
   private diedEl: HTMLElement | null = null;
   private wonEl: HTMLElement | null = null;
   private lockedFlashTimer = 0;
+  private weaponImages: string[] = [];
 
   constructor() {
     this.root = document.getElementById('hud-root')!;
@@ -52,7 +79,7 @@ export class Hud {
     bar.appendChild(counters);
 
     this.weaponEl = el('div', 'hud-weapon', 'Sword');
-    this.viewmodelEl = el('div', 'hud-viewmodel sword');
+    this.viewmodelEl = el('div', 'hud-viewmodel');
     this.promptEl = el('div', 'hud-prompt', 'Press E to open');
     this.promptEl.style.display = 'none';
     this.lockedFlashEl = el('div', 'hud-locked-flash', 'LOCKED');
@@ -74,7 +101,13 @@ export class Hud {
     this.arrowEl.textContent = String(player.arrows);
     this.bombEl.textContent = String(player.bombs);
     this.weaponEl.textContent = ['Sword', 'Bow', 'Bombs', 'Fire Rod'][player.currentWeapon];
-    this.viewmodelEl.className = `hud-viewmodel ${['sword', 'bow', 'bombs', 'fire-rod'][player.currentWeapon]}`;
+    if (this.weaponImages.length > 0) {
+      const idx = player.currentWeapon;
+      this.viewmodelEl.style.backgroundImage = `url(${this.weaponImages[idx]})`;
+      this.viewmodelEl.style.backgroundSize = 'contain';
+      this.viewmodelEl.style.backgroundRepeat = 'no-repeat';
+      this.viewmodelEl.style.backgroundPosition = 'center bottom';
+    }
     this.promptEl.style.display = doorPromptVisible ? 'block' : 'none';
 
     if (this.lockedFlashTimer > 0) {
@@ -135,6 +168,16 @@ export class Hud {
       this.wonEl.remove();
       this.wonEl = null;
     }
+  }
+
+  async loadWeaponSprites(): Promise<void> {
+    const urls = [
+      'sprites/weapon_lvl1_sword.png',
+      'sprites/weapon_lvl1_bow.png',
+      'sprites/weapon_bomb.png',
+      'sprites/weapon_fire_rod.png',
+    ];
+    this.weaponImages = await Promise.all(urls.map((url) => colorKeyToDataURL(url)));
   }
 
   private renderHearts(health: number, maxHealth: number): void {

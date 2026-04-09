@@ -20,6 +20,9 @@ export class Bomb extends Entity {
   lifetime = BOMB_LIFETIME;
   ownerId: number;
   detonateCallback?: (world: World) => void;
+  detonated = false;
+  explosionTimer = 0;
+  static readonly EXPLOSION_DURATION = 0.5;
 
   constructor(position: Vec2, velocity: Vec2, ownerId: number) {
     super(position, { x: 0.2, z: 0.2 });
@@ -29,12 +32,20 @@ export class Bomb extends Entity {
   }
 
   update(dt: number, world: World): void {
+    if (this.detonated) {
+      this.explosionTimer -= dt;
+      if (this.explosionTimer <= 0) {
+        this.alive = false;
+      }
+      return;
+    }
     this.heightVelocity += BOMB_GRAVITY * dt;
     this.position = add(this.position, scale(this.velocity, dt));
     this.lifetime -= dt;
     if (this.lifetime <= 0) {
       if (this.detonateCallback) this.detonateCallback(world);
-      this.alive = false;
+      this.detonated = true;
+      this.explosionTimer = Bomb.EXPLOSION_DURATION;
     }
   }
 

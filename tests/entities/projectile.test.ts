@@ -23,12 +23,17 @@ describe('Bomb projectile', () => {
     expect(b.heightVelocity).toBeCloseTo(-2);
   });
 
-  it('detonates after lifetime expires', () => {
+  it('detonates after lifetime expires and enters explosion phase', () => {
     const g = makeGrid(10, 10);
     const w = new World(g, 1);
     const b = new Bomb({ x: 1, z: 1 }, { x: 0, z: 0 }, 0);
     b.lifetime = 0.01;
     b.update(0.02, w);
+    // Bomb is now detonated but still alive during explosion animation
+    expect(b.detonated).toBe(true);
+    expect(b.alive).toBe(true);
+    // After explosion duration elapses, bomb becomes dead
+    b.update(Bomb.EXPLOSION_DURATION + 0.01, w);
     expect(b.alive).toBe(false);
   });
 
