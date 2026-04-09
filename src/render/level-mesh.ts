@@ -88,14 +88,14 @@ export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh
 
       const wallVRepeat = wh / cs;
 
-      // West neighbor (-x)
+      // West neighbor (-x) — normal must point +X (toward empty cell)
       if (isSolid(level.grid.get(x - 1, z))) {
         pushQuad(
           wallPositions, wallUVs, wallIndices, wallVertexCount,
-          [x * cs, 0,  z * cs],
           [x * cs, 0,  (z + 1) * cs],
-          [x * cs, wh, (z + 1) * cs],
+          [x * cs, 0,  z * cs],
           [x * cs, wh, z * cs],
+          [x * cs, wh, (z + 1) * cs],
           1, wallVRepeat,
         );
         wallVertexCount += 4;
@@ -112,14 +112,14 @@ export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh
         );
         wallVertexCount += 4;
       }
-      // North neighbor (-z)
+      // North neighbor (-z) — normal must point +Z (toward empty cell)
       if (isSolid(level.grid.get(x, z - 1))) {
         pushQuad(
           wallPositions, wallUVs, wallIndices, wallVertexCount,
-          [(x + 1) * cs, 0,  z * cs],
           [x * cs,       0,  z * cs],
-          [x * cs,       wh, z * cs],
+          [(x + 1) * cs, 0,  z * cs],
           [(x + 1) * cs, wh, z * cs],
+          [x * cs,       wh, z * cs],
           1, wallVRepeat,
         );
         wallVertexCount += 4;
