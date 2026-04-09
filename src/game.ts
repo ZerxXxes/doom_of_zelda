@@ -22,7 +22,7 @@ import { Cell } from './level/cell';
 import { makeAABB, aabbOverlaps } from './math/aabb';
 import { fromYaw } from './math/vec2';
 import { buildLevelMesh, LevelMesh, LevelTextures } from './render/level-mesh';
-import { loadTexture, loadTextureColorKeyed } from './render/sprite-atlas';
+import { loadTexture, loadTextureColorKeyed, sliceSpriteStrip } from './render/sprite-atlas';
 import { BillboardManager, KnightTextures } from './render/billboard';
 import { ProjectileRenderer } from './render/projectile-render';
 import { DoorRenderer, DoorTextures } from './render/door-render';
@@ -46,6 +46,7 @@ export class Game {
   private projectileRenderer!: ProjectileRenderer;
   private levelTextures!: LevelTextures;
   private knightTextures!: KnightTextures;
+  private deathEffectFrames!: THREE.Texture[];
   private doorTextures!: DoorTextures;
   private doorRenderer!: DoorRenderer;
   private statueTexture!: THREE.Texture;
@@ -96,6 +97,8 @@ export class Game {
       sideRightFrames: [s1, s2, s3].map(flipTexture),
       backFrames: [b1, b2, b3, b4],
     };
+    const deathStripTex = await loadTexture('sprites/Enemy Death Effects.png');
+    this.deathEffectFrames = sliceSpriteStrip(deathStripTex, 7);
     const [doorLocked, doorUnlocked, doorOpen] = await Promise.all([
       loadTextureColorKeyed('sprites/locked_door_red.png'),
       loadTextureColorKeyed('sprites/unlocked_door_red.png'),
@@ -160,7 +163,7 @@ export class Game {
     this.renderer.scene.add(this.levelMesh.ceiling);
     this.renderer.applyAmbient(this.level.ambient);
 
-    this.billboards = new BillboardManager(this.renderer.scene, this.knightTextures);
+    this.billboards = new BillboardManager(this.renderer.scene, this.knightTextures, this.deathEffectFrames);
     this.projectileRenderer = new ProjectileRenderer(this.renderer.scene);
     this.doorRenderer = new DoorRenderer(this.renderer.scene, this.doorTextures);
     for (const e of this.world.entities) {

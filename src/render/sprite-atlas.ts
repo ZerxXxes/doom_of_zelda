@@ -78,6 +78,24 @@ export async function loadTextureColorKeyed(
   });
 }
 
+/**
+ * Slice a horizontal sprite strip into N equal-width frame textures.
+ * Each returned texture shares the same underlying image but uses
+ * offset/repeat to show only its portion.
+ */
+export function sliceSpriteStrip(baseTexture: THREE.Texture, frameCount: number): THREE.Texture[] {
+  const frames: THREE.Texture[] = [];
+  const frameWidth = 1 / frameCount;
+  for (let i = 0; i < frameCount; i++) {
+    const tex = baseTexture.clone();
+    tex.repeat.set(frameWidth, 1);
+    tex.offset.set(i * frameWidth, 0);
+    tex.needsUpdate = true;
+    frames.push(tex);
+  }
+  return frames;
+}
+
 export function frameToUV(frame: SpriteFrame, atlasW: number, atlasH: number): { u: number; v: number; w: number; h: number } {
   return {
     u: frame.u / atlasW,

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Enemy, GreenKnight, BlueKnight, RedKnight, PurpleKnight } from '../entities/enemy';
+import { Enemy, EnemyState, GreenKnight, BlueKnight, RedKnight, PurpleKnight } from '../entities/enemy';
 import { sub, dot, crossZ, normalize, fromYaw } from '../math/vec2';
 
 const ANIM_FPS = 6;
@@ -15,7 +15,8 @@ export interface KnightTextures {
   backFrames: THREE.Texture[];
 }
 
-type Facing = 'front' | 'side-left' | 'side-right' | 'back';
+type KnightFacing = 'front' | 'side-left' | 'side-right' | 'back';
+type Facing = KnightFacing | 'death';
 
 interface EnemyVisual {
   enemy: Enemy;
@@ -28,11 +29,13 @@ interface EnemyVisual {
 export class BillboardManager {
   visuals: EnemyVisual[] = [];
   private textures: KnightTextures;
+  private deathFrames: THREE.Texture[];
   private scene: THREE.Scene;
 
-  constructor(scene: THREE.Scene, textures: KnightTextures) {
+  constructor(scene: THREE.Scene, textures: KnightTextures, deathFrames: THREE.Texture[]) {
     this.scene = scene;
     this.textures = textures;
+    this.deathFrames = deathFrames;
   }
 
   add(enemy: Enemy): void {
@@ -74,6 +77,23 @@ export class BillboardManager {
       v.animTime += dt;
       v.sprite.position.set(v.enemy.position.x, 0.85, v.enemy.position.z);
 
+      if (v.enemy.state === EnemyState.Dying) {
+        const deathProgress = 1 - (v.enemy.stateTimer / 0.5);
+        const deathFrame = Math.min(
+          Math.floor(deathProgress * this.deathFrames.length),
+          this.deathFrames.length - 1,
+        );
+        if (deathFrame !== v.currentFrameIndex || v.currentFacing !== 'death') {
+          const mat = v.sprite.material as THREE.SpriteMaterial;
+          mat.map = this.deathFrames[deathFrame];
+          mat.color.set(1, 1, 1);
+          mat.needsUpdate = true;
+          v.currentFacing = 'death';
+          v.currentFrameIndex = deathFrame;
+        }
+        continue;
+      }
+
       const facing = this.pickFacing(v.enemy, camPos);
       let frames: THREE.Texture[];
       switch (facing) {
@@ -100,7 +120,7 @@ export class BillboardManager {
     return new THREE.Color(1, 1, 1);
   }
 
-  private pickFacing(enemy: Enemy, camPos: { x: number; z: number }): Facing {
+  private pickFacing(enemy: Enemy, camPos: { x: number; z: number }): KnightFacing {
     const toCam = normalize(sub(camPos, enemy.position));
     const enemyForward = fromYaw(enemy.yaw);
     const d = dot(toCam, enemyForward);
@@ -110,7 +130,7 @@ export class BillboardManager {
     return c > 0 ? 'side-left' : 'side-right';
   }
 
-  private applyTexture(sprite: THREE.Sprite, facing: Facing, frameIndex: number): void {
+  private applyTexture(sprite: THREE.Sprite, facing: KnightFacing, frameIndex: number): void {
     const mat = sprite.material as THREE.SpriteMaterial;
     let frames: THREE.Texture[];
     switch (facing) {
