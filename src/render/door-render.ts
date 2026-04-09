@@ -1,60 +1,56 @@
 import * as THREE from 'three';
 import { Door, DoorState } from '../entities/door';
-
-export interface DoorTextures {
-  locked: THREE.Texture;
-  unlocked: THREE.Texture;
-  open: THREE.Texture;
-}
+import { Grid } from '../level/grid';
+import { isSolid } from '../level/cell';
 
 interface DoorVisual {
   door: Door;
-  sprite: THREE.Sprite;
-  currentState: string | null;
+  mesh: THREE.Mesh;
 }
 
 export class DoorRenderer {
   private visuals: DoorVisual[] = [];
-  private textures: DoorTextures;
+  private texture: THREE.Texture;
   private scene: THREE.Scene;
 
-  constructor(scene: THREE.Scene, textures: DoorTextures) {
+  constructor(scene: THREE.Scene, texture: THREE.Texture) {
     this.scene = scene;
-    this.textures = textures;
+    this.texture = texture;
   }
 
-  add(door: Door): void {
-    const mat = new THREE.SpriteMaterial({
-      map: this.textures.locked,
+  add(door: Door, grid: Grid, cellSize: number): void {
+    const cs = cellSize;
+    const wh = 4.0; // wall height — matches level ambient.wallHeight
+    const geo = new THREE.PlaneGeometry(cs, wh);
+    const mat = new THREE.MeshBasicMaterial({
+      map: this.texture,
       transparent: true,
-      depthTest: true,
+      side: THREE.DoubleSide,
     });
-    const sprite = new THREE.Sprite(mat);
-    // Doors should be roughly wall-sized (fill the grid cell)
-    sprite.scale.set(3.5, 3.5, 1);
-    sprite.position.set(door.position.x, 1.75, door.position.z);
-    this.scene.add(sprite);
-    this.visuals.push({ door, sprite, currentState: null });
+    const mesh = new THREE.Mesh(geo, mat);
+
+    // Position at door cell center, half wall-height up
+    mesh.position.set(door.position.x, wh / 2, door.position.z);
+
+    // Orient based on which neighbors are open (non-solid)
+    const cx = door.cellX;
+    const cz = door.cellZ;
+    const eastOpen = !isSolid(grid.get(cx + 1, cz));
+    const westOpen = !isSolid(grid.get(cx - 1, cz));
+    if (eastOpen || westOpen) {
+      // Door faces east-west: rotate 90° around Y
+      mesh.rotation.y = Math.PI / 2;
+    }
+    // Default PlaneGeometry faces +Z; if north/south are open, no rotation needed
+
+    this.scene.add(mesh);
+    this.visuals.push({ door, mesh });
   }
 
   update(): void {
     for (const v of this.visuals) {
-      const state = v.door.state;
-      if (state !== v.currentState) {
-        const mat = v.sprite.material as THREE.SpriteMaterial;
-        if (state === DoorState.Open || state === DoorState.Opening) {
-          mat.map = this.textures.open;
-        } else if (v.door.locked) {
-          mat.map = this.textures.locked;
-        } else {
-          mat.map = this.textures.unlocked;
-        }
-        mat.needsUpdate = true;
-        v.currentState = state;
-      }
-
-      // When fully open, we could hide the sprite entirely or keep the open archway visible.
-      // Keep it visible — it provides visual context for where the door was.
+      // Hide door mesh when fully open
+      v.mesh.visible = v.door.state !== DoorState.Open;
     }
   }
 }

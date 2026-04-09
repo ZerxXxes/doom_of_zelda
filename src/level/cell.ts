@@ -10,12 +10,11 @@ export const Cell = {
 export type CellType = (typeof Cell)[keyof typeof Cell];
 
 export function isSolid(cell: number): boolean {
-  return (
-    cell === Cell.Wall ||
-    cell === Cell.Breakable ||
-    cell === Cell.Door ||
-    cell === Cell.LockedDoor
-  );
+  return cell === Cell.Wall || cell === Cell.Breakable;
+}
+
+export function isBlocking(cell: number): boolean {
+  return cell === Cell.Wall || cell === Cell.Breakable || cell === Cell.Door || cell === Cell.LockedDoor;
 }
 
 export function isDoor(cell: number): boolean {

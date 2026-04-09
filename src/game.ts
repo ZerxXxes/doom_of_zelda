@@ -25,7 +25,7 @@ import { buildLevelMesh, LevelMesh, LevelTextures } from './render/level-mesh';
 import { loadTexture, loadTextureColorKeyed, sliceSpriteStrip } from './render/sprite-atlas';
 import { BillboardManager, KnightTextures } from './render/billboard';
 import { ProjectileRenderer } from './render/projectile-render';
-import { DoorRenderer, DoorTextures } from './render/door-render';
+import { DoorRenderer } from './render/door-render';
 import { playSound } from './audio';
 import levelJsonRaw from './data/level-01.json';
 
@@ -47,7 +47,7 @@ export class Game {
   private levelTextures!: LevelTextures;
   private knightTextures!: KnightTextures;
   private deathEffectFrames!: THREE.Texture[];
-  private doorTextures!: DoorTextures;
+  private doorTexture!: THREE.Texture;
   private doorRenderer!: DoorRenderer;
   private statueTexture!: THREE.Texture;
   private decorationRenderer!: DecorationRenderer;
@@ -99,12 +99,8 @@ export class Game {
     };
     const deathStripTex = await loadTexture('sprites/Enemy Death Effects.png');
     this.deathEffectFrames = sliceSpriteStrip(deathStripTex, 7);
-    const [doorLocked, doorUnlocked, doorOpen] = await Promise.all([
-      loadTextureColorKeyed('sprites/locked_door_red.png'),
-      loadTextureColorKeyed('sprites/unlocked_door_red.png'),
-      loadTextureColorKeyed('sprites/open_door_blue.png'),
-    ]);
-    this.doorTextures = { locked: doorLocked, unlocked: doorUnlocked, open: doorOpen };
+    const doorTexture = await loadTextureColorKeyed('sprites/open_door_blue.png');
+    this.doorTexture = doorTexture;
     const statueTexture = await loadTextureColorKeyed('sprites/statue.png');
     this.statueTexture = statueTexture;
     this.loadLevel();
@@ -165,10 +161,10 @@ export class Game {
 
     this.billboards = new BillboardManager(this.renderer.scene, this.knightTextures, this.deathEffectFrames);
     this.projectileRenderer = new ProjectileRenderer(this.renderer.scene);
-    this.doorRenderer = new DoorRenderer(this.renderer.scene, this.doorTextures);
+    this.doorRenderer = new DoorRenderer(this.renderer.scene, this.doorTexture);
     for (const e of this.world.entities) {
       if (e instanceof Enemy) this.billboards.add(e);
-      if (e instanceof Door) this.doorRenderer.add(e);
+      if (e instanceof Door) this.doorRenderer.add(e, this.level.grid, this.level.gridSize);
     }
 
     this.dead = false;

@@ -1,7 +1,7 @@
 import { Vec2 } from '../math/vec2';
 import { AABB, makeAABB, aabbCellRange } from '../math/aabb';
 import { Grid } from './grid';
-import { isSolid } from './cell';
+import { isBlocking } from './cell';
 
 /**
  * Resolve a movement intent against the wall grid using axis-separated
@@ -41,7 +41,7 @@ function overlapsAnySolid(grid: Grid, aabb: AABB, cellSize: number): boolean {
   const r = aabbCellRange(aabb, cellSize);
   for (let z = r.minZ; z <= r.maxZ; z++) {
     for (let x = r.minX; x <= r.maxX; x++) {
-      if (isSolid(grid.get(x, z))) {
+      if (isBlocking(grid.get(x, z))) {
         if (cellOverlapsAabb(x, z, cellSize, aabb)) return true;
       }
     }
@@ -68,7 +68,7 @@ function pushOutX(grid: Grid, aabb: AABB, motionX: number, cellSize: number): nu
   let resultX = aabb.center.x;
   for (let z = r.minZ; z <= r.maxZ; z++) {
     for (let x = r.minX; x <= r.maxX; x++) {
-      if (!isSolid(grid.get(x, z))) continue;
+      if (!isBlocking(grid.get(x, z))) continue;
       if (!cellOverlapsAabb(x, z, cellSize, makeAABB({ x: resultX, z: aabb.center.z }, aabb.halfExtents))) continue;
       if (motionX > 0) {
         resultX = x * cellSize - aabb.halfExtents.x;
@@ -85,7 +85,7 @@ function pushOutZ(grid: Grid, aabb: AABB, motionZ: number, cellSize: number): nu
   let resultZ = aabb.center.z;
   for (let z = r.minZ; z <= r.maxZ; z++) {
     for (let x = r.minX; x <= r.maxX; x++) {
-      if (!isSolid(grid.get(x, z))) continue;
+      if (!isBlocking(grid.get(x, z))) continue;
       if (!cellOverlapsAabb(x, z, cellSize, makeAABB({ x: aabb.center.x, z: resultZ }, aabb.halfExtents))) continue;
       if (motionZ > 0) {
         resultZ = z * cellSize - aabb.halfExtents.z;

@@ -1,6 +1,6 @@
 import { Vec2, distance, normalize } from '../math/vec2';
 import { Grid } from './grid';
-import { isSolid } from './cell';
+import { isBlocking } from './cell';
 
 export interface RaycastHit {
   distance: number;
@@ -62,7 +62,7 @@ export function raycastWalls(
       sideZ += deltaZ;
       cellX += stepX;
       if (dist > maxDist) return null;
-      if (isSolid(grid.get(cellX, cellZ))) {
+      if (isBlocking(grid.get(cellX, cellZ))) {
         return {
           distance: dist,
           point: { x: origin.x + dir.x * dist, z: origin.z + dir.z * dist },
@@ -81,7 +81,7 @@ export function raycastWalls(
       cellZ += stepZ;
     }
     if (dist > maxDist) return null;
-    if (isSolid(grid.get(cellX, cellZ))) {
+    if (isBlocking(grid.get(cellX, cellZ))) {
       return {
         distance: dist,
         point: { x: origin.x + dir.x * dist, z: origin.z + dir.z * dist },
