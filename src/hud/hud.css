@@ -82,9 +82,9 @@
 
 .hud-counters-stack {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  justify-content: center;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
 }
 
 .hud-counter-item {
