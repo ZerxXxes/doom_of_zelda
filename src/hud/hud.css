@@ -50,10 +50,11 @@
 
 .hud-magic-fill {
   position: absolute;
-  bottom: 3px;
-  left: 5px;
-  width: 38px;
+  bottom: 9px;
+  left: 9px;
+  width: 30px;
   background: #00cc44;
+  max-height: 102px;
 }
 
 .hud-weapon-box-container {
@@ -79,8 +80,30 @@
   object-fit: contain;
 }
 
-.hud-counters { display: flex; gap: 12px; align-items: center; }
-.hud-counter { display: flex; align-items: center; gap: 4px; font-size: 14px; }
+.hud-counters-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+}
+
+.hud-counter-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hud-counter-icon {
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+.hud-counter-value {
+  font-size: 16px;
+  color: #ffffff;
+  text-shadow: 1px 1px 0 #000;
+  min-width: 20px;
+}
 
 .hud-prompt {
   position: absolute;

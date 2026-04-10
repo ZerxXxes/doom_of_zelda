@@ -54,6 +54,7 @@ export class Hud {
   private magicBgEl: HTMLImageElement;
   private weaponBoxEl: HTMLImageElement;
   private weaponIconEl: HTMLImageElement;
+  private rupeeEl: HTMLElement;
   private keyEl: HTMLElement;
   private arrowEl: HTMLElement;
   private bombEl: HTMLElement;
@@ -74,6 +75,14 @@ export class Hud {
   private weaponIconUrls: string[] = [];
   private weaponBoxUrl = '';
   private magicMeterUrl = '';
+  private rupeeIconUrl = '';
+  private bombCountIconUrl = '';
+  private arrowCountIconUrl = '';
+  private keyCountIconUrl = '';
+  private rupeeIconEl!: HTMLImageElement;
+  private bombCountIconEl!: HTMLImageElement;
+  private arrowCountIconEl!: HTMLImageElement;
+  private keyCountIconEl!: HTMLImageElement;
 
   constructor() {
     this.root = document.getElementById('hud-root')!;
@@ -81,47 +90,63 @@ export class Hud {
 
     const bar = el('div', 'hud-bar');
 
-    // Hearts
-    this.heartsEl = el('div', 'hud-hearts');
-    bar.appendChild(this.heartsEl);
-
-    // Magic meter
+    // 1. Magic meter
     const magicContainer = el('div', 'hud-magic-container');
     this.magicBgEl = document.createElement('img');
     this.magicBgEl.className = 'hud-magic-bg';
-    this.magicBgEl.src = '';
     magicContainer.appendChild(this.magicBgEl);
     this.magicFillEl = el('div', 'hud-magic-fill');
     magicContainer.appendChild(this.magicFillEl);
     bar.appendChild(magicContainer);
 
-    // Weapon select box
+    // 2. Weapon select box
     const weaponContainer = el('div', 'hud-weapon-box-container');
     this.weaponBoxEl = document.createElement('img');
     this.weaponBoxEl.className = 'hud-weapon-box-bg';
-    this.weaponBoxEl.src = '';
     weaponContainer.appendChild(this.weaponBoxEl);
     this.weaponIconEl = document.createElement('img');
     this.weaponIconEl.className = 'hud-weapon-icon';
     weaponContainer.appendChild(this.weaponIconEl);
     bar.appendChild(weaponContainer);
 
-    // Counters
-    const counters = el('div', 'hud-counters');
-    const keyCounter = el('div', 'hud-counter', 'K:');
-    this.keyEl = el('span', undefined, '0');
-    keyCounter.appendChild(this.keyEl);
-    const arrowCounter = el('div', 'hud-counter', 'A:');
-    this.arrowEl = el('span', undefined, '0');
-    arrowCounter.appendChild(this.arrowEl);
-    const bombCounter = el('div', 'hud-counter', 'B:');
-    this.bombEl = el('span', undefined, '0');
-    bombCounter.appendChild(this.bombEl);
-    counters.appendChild(keyCounter);
-    counters.appendChild(arrowCounter);
-    counters.appendChild(bombCounter);
-    bar.appendChild(counters);
+    // 3-6. Counter stack (rupees, bombs, arrows, keys)
+    const countersStack = el('div', 'hud-counters-stack');
 
+    // Helper to create one counter row: icon + value span
+    const makeCounter = (_fieldName: string): { icon: HTMLImageElement; value: HTMLElement } => {
+      const row = el('div', 'hud-counter-item');
+      const icon = document.createElement('img');
+      icon.className = 'hud-counter-icon';
+      row.appendChild(icon);
+      const value = el('span', 'hud-counter-value', '0');
+      row.appendChild(value);
+      countersStack.appendChild(row);
+      return { icon, value };
+    };
+
+    const rupeeCounter = makeCounter('rupee');
+    this.rupeeIconEl = rupeeCounter.icon;
+    this.rupeeEl = rupeeCounter.value;
+
+    const bombCounter = makeCounter('bomb');
+    this.bombCountIconEl = bombCounter.icon;
+    this.bombEl = bombCounter.value;
+
+    const arrowCounter = makeCounter('arrow');
+    this.arrowCountIconEl = arrowCounter.icon;
+    this.arrowEl = arrowCounter.value;
+
+    const keyCounter = makeCounter('key');
+    this.keyCountIconEl = keyCounter.icon;
+    this.keyEl = keyCounter.value;
+
+    bar.appendChild(countersStack);
+
+    // 7. Hearts
+    this.heartsEl = el('div', 'hud-hearts');
+    bar.appendChild(this.heartsEl);
+
+    // Rest of HUD (viewmodel, prompt, etc.)
     this.viewmodelEl = el('div', 'hud-viewmodel');
     this.promptEl = el('div', 'hud-prompt', 'Press E to open');
     this.promptEl.style.display = 'none';
@@ -141,12 +166,12 @@ export class Hud {
 
     // Magic fill: height proportional to magic/maxMagic, growing from bottom
     const magicPct = player.magic / player.maxMagic;
-    const maxFillHeight = 120; // px, interior height of the meter (126 - borders)
-    this.magicFillEl.style.height = `${Math.round(magicPct * maxFillHeight)}px`;
+    this.magicFillEl.style.height = `${Math.round(magicPct * 102)}px`;
 
-    this.keyEl.textContent = player.hasSmallKey ? '1' : '0';
-    this.arrowEl.textContent = String(player.arrows);
+    this.rupeeEl.textContent = '0'; // rupees not tracked yet
     this.bombEl.textContent = String(player.bombs);
+    this.arrowEl.textContent = String(player.arrows);
+    this.keyEl.textContent = player.hasSmallKey ? '1' : '0';
 
     if (this.weaponIconUrls.length > 0) {
       this.weaponIconEl.src = this.weaponIconUrls[player.currentWeapon];
@@ -280,9 +305,19 @@ export class Hud {
     ];
     this.weaponIconUrls = await Promise.all(iconUrls.map((url) => colorKeyToDataURL(url)));
 
+    // Counter icon sprites
+    this.rupeeIconUrl = await colorKeyToDataURL('sprites/rupees_count_icon.png');
+    this.bombCountIconUrl = await colorKeyToDataURL('sprites/bomb_count_icon.png');
+    this.arrowCountIconUrl = await colorKeyToDataURL('sprites/arrow_count_icon.png');
+    this.keyCountIconUrl = await colorKeyToDataURL('sprites/key_count_icon.png');
+
     // Set background images now that sprites are loaded
     this.magicBgEl.src = this.magicMeterUrl;
     this.weaponBoxEl.src = this.weaponBoxUrl;
+    this.rupeeIconEl.src = this.rupeeIconUrl;
+    this.bombCountIconEl.src = this.bombCountIconUrl;
+    this.arrowCountIconEl.src = this.arrowCountIconUrl;
+    this.keyCountIconEl.src = this.keyCountIconUrl;
   }
 
   private renderHearts(health: number, maxHealth: number): void {
