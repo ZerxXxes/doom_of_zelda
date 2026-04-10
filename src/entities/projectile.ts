@@ -113,7 +113,7 @@ export class Bomb extends Entity {
 }
 
 export const ARROW_SPEED = 60;
-export const ARROW_STUCK_DURATION = 3.0;
+export const ARROW_STUCK_DURATION = 9.0;
 export const ARROW_DAMAGE = 2; // matches BOW_DAMAGE
 
 export class Arrow extends Entity {

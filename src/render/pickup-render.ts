@@ -35,7 +35,12 @@ export class PickupRenderer {
       depthTest: true,
     });
     const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(0.8, 0.8, 1);
+    // Rupees are tall and thin; other pickups are roughly square
+    if (frames) {
+      sprite.scale.set(0.4, 0.8, 1);
+    } else {
+      sprite.scale.set(0.8, 0.8, 1);
+    }
     sprite.position.set(pickup.position.x, 0.5, pickup.position.z);
     this.scene.add(sprite);
     this.visuals.push({ pickup, sprite, frames, animTime: 0 });
