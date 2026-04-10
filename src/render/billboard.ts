@@ -108,6 +108,11 @@ export class BillboardManager {
         this.applyTexture(v.sprite, facing, frameIndex);
         v.currentFacing = facing;
         v.currentFrameIndex = frameIndex;
+        // Scale sprite based on frame aspect ratio (height fixed at 1.7)
+        const tex = frames[frameIndex];
+        const img = tex.image as HTMLCanvasElement | HTMLImageElement;
+        const aspect = img.width / img.height;
+        v.sprite.scale.set(1.7 * aspect, 1.7, 1);
       }
     }
   }
