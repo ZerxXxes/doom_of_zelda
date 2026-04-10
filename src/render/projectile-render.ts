@@ -131,7 +131,7 @@ export class ProjectileRenderer {
         // then tilt so the arrow tip points horizontally into the wall
         mesh.rotation.order = 'YZX';
         mesh.rotation.y = Math.atan2(-a.flightDir.x, -a.flightDir.z) + Math.PI / 2;
-        mesh.rotation.z = Math.PI / 2; // tip points into the wall (horizontal)
+        mesh.rotation.z = -Math.PI / 2; // tip points into the wall (horizontal)
         this.scene.add(mesh);
         this.arrowStuckMeshes.set(a, mesh);
         continue;
