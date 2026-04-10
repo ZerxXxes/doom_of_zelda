@@ -51,10 +51,12 @@ export class Hud {
   private root: HTMLElement;
   private heartsEl: HTMLElement;
   private magicFillEl: HTMLElement;
+  private magicBgEl: HTMLImageElement;
+  private weaponBoxEl: HTMLImageElement;
+  private weaponIconEl: HTMLImageElement;
   private keyEl: HTMLElement;
   private arrowEl: HTMLElement;
   private bombEl: HTMLElement;
-  private weaponEl: HTMLElement;
   private viewmodelEl: HTMLElement;
   private promptEl: HTMLElement;
   private lockedFlashEl: HTMLElement;
@@ -67,20 +69,44 @@ export class Hud {
   private weaponImages: string[] = [];
   private bowEmptyImage = '';
   private bowReloadTimer = 0;
+  private heartFullUrl = '';
+  private heartHalfUrl = '';
+  private weaponIconUrls: string[] = [];
+  private weaponBoxUrl = '';
+  private magicMeterUrl = '';
 
   constructor() {
     this.root = document.getElementById('hud-root')!;
     while (this.root.firstChild) this.root.removeChild(this.root.firstChild);
 
     const bar = el('div', 'hud-bar');
+
+    // Hearts
     this.heartsEl = el('div', 'hud-hearts');
     bar.appendChild(this.heartsEl);
 
-    const magicBar = el('div', 'hud-magic-bar');
+    // Magic meter
+    const magicContainer = el('div', 'hud-magic-container');
+    this.magicBgEl = document.createElement('img');
+    this.magicBgEl.className = 'hud-magic-bg';
+    this.magicBgEl.src = '';
+    magicContainer.appendChild(this.magicBgEl);
     this.magicFillEl = el('div', 'hud-magic-fill');
-    magicBar.appendChild(this.magicFillEl);
-    bar.appendChild(magicBar);
+    magicContainer.appendChild(this.magicFillEl);
+    bar.appendChild(magicContainer);
 
+    // Weapon select box
+    const weaponContainer = el('div', 'hud-weapon-box-container');
+    this.weaponBoxEl = document.createElement('img');
+    this.weaponBoxEl.className = 'hud-weapon-box-bg';
+    this.weaponBoxEl.src = '';
+    weaponContainer.appendChild(this.weaponBoxEl);
+    this.weaponIconEl = document.createElement('img');
+    this.weaponIconEl.className = 'hud-weapon-icon';
+    weaponContainer.appendChild(this.weaponIconEl);
+    bar.appendChild(weaponContainer);
+
+    // Counters
     const counters = el('div', 'hud-counters');
     const keyCounter = el('div', 'hud-counter', 'K:');
     this.keyEl = el('span', undefined, '0');
@@ -96,7 +122,6 @@ export class Hud {
     counters.appendChild(bombCounter);
     bar.appendChild(counters);
 
-    this.weaponEl = el('div', 'hud-weapon', 'Sword');
     this.viewmodelEl = el('div', 'hud-viewmodel');
     this.promptEl = el('div', 'hud-prompt', 'Press E to open');
     this.promptEl.style.display = 'none';
@@ -105,7 +130,6 @@ export class Hud {
     this.vignetteEl = el('div', 'hud-damage-vignette');
 
     this.root.appendChild(bar);
-    this.root.appendChild(this.weaponEl);
     this.root.appendChild(this.viewmodelEl);
     this.root.appendChild(this.promptEl);
     this.root.appendChild(this.lockedFlashEl);
@@ -114,11 +138,20 @@ export class Hud {
 
   update(dt: number, player: Player, doorPromptVisible: boolean): void {
     this.renderHearts(player.health, player.maxHealth);
-    this.magicFillEl.style.width = `${(player.magic / player.maxMagic) * 100}%`;
+
+    // Magic fill: height proportional to magic/maxMagic, growing from bottom
+    const magicPct = player.magic / player.maxMagic;
+    const maxFillHeight = 120; // px, interior height of the meter (126 - borders)
+    this.magicFillEl.style.height = `${Math.round(magicPct * maxFillHeight)}px`;
+
     this.keyEl.textContent = player.hasSmallKey ? '1' : '0';
     this.arrowEl.textContent = String(player.arrows);
     this.bombEl.textContent = String(player.bombs);
-    this.weaponEl.textContent = ['Sword', 'Bow', 'Bombs', 'Fire Rod'][player.currentWeapon];
+
+    if (this.weaponIconUrls.length > 0) {
+      this.weaponIconEl.src = this.weaponIconUrls[player.currentWeapon];
+    }
+
     // Attack animation timer
     if (this.attackTimer > 0) {
       this.attackTimer -= dt;
@@ -223,24 +256,52 @@ export class Hud {
     }
   }
 
-  async loadWeaponSprites(): Promise<void> {
-    const urls = [
+  async loadHudSprites(): Promise<void> {
+    // Weapon viewmodel sprites (for the held weapon at bottom of screen)
+    const viewmodelUrls = [
       'sprites/weapon_lvl1_sword.png',
       'sprites/weapon_lvl1_bow.png',
       'sprites/weapon_bomb.png',
       'sprites/weapon_fire_rod.png',
     ];
-    this.weaponImages = await Promise.all(urls.map((url) => colorKeyToDataURL(url)));
+    this.weaponImages = await Promise.all(viewmodelUrls.map((url) => colorKeyToDataURL(url)));
     this.bowEmptyImage = await colorKeyToDataURL('sprites/weapon_bow_empty.png');
+
+    // HUD icon sprites
+    this.heartFullUrl = await colorKeyToDataURL('sprites/full_heart_icon.png');
+    this.heartHalfUrl = await colorKeyToDataURL('sprites/half_heart_icon.png');
+    this.weaponBoxUrl = await colorKeyToDataURL('sprites/weapon_select_box.png');
+    this.magicMeterUrl = await colorKeyToDataURL('sprites/magic_meter.png');
+    const iconUrls = [
+      'sprites/lvl1_sword_icon.png',
+      'sprites/bow_icon.png',
+      'sprites/bomb_icon.png',
+      'sprites/fire_rod_icon.png',
+    ];
+    this.weaponIconUrls = await Promise.all(iconUrls.map((url) => colorKeyToDataURL(url)));
+
+    // Set background images now that sprites are loaded
+    this.magicBgEl.src = this.magicMeterUrl;
+    this.weaponBoxEl.src = this.weaponBoxUrl;
   }
 
   private renderHearts(health: number, maxHealth: number): void {
     while (this.heartsEl.firstChild) this.heartsEl.removeChild(this.heartsEl.firstChild);
+    if (!this.heartFullUrl) return; // sprites not loaded yet
     const totalHearts = maxHealth / 2;
     for (let i = 0; i < totalHearts; i++) {
       const filledHalves = Math.max(0, Math.min(2, health - i * 2));
-      const cls = filledHalves === 2 ? 'hud-heart' : filledHalves === 1 ? 'hud-heart half' : 'hud-heart empty';
-      this.heartsEl.appendChild(el('div', cls));
+      const img = document.createElement('img');
+      img.className = 'hud-heart-icon';
+      if (filledHalves === 2) {
+        img.src = this.heartFullUrl;
+      } else if (filledHalves === 1) {
+        img.src = this.heartHalfUrl;
+      } else {
+        img.src = this.heartFullUrl; // show dimmed full heart as "empty slot"
+        img.style.opacity = '0.2';
+      }
+      this.heartsEl.appendChild(img);
     }
   }
 }

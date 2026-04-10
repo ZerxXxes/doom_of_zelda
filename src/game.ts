@@ -141,7 +141,7 @@ export class Game {
     this.arrowTex = arrowTex;
     this.arrowStuckTex = arrowStuckTex;
     this.fireFrames = [fireTex1, fireTex2];
-    this.hud.loadWeaponSprites();
+    this.hud.loadHudSprites();
     this.loadLevel();
     requestAnimationFrame((t) => this.tick(t));
   }

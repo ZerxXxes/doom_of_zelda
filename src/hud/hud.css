@@ -16,39 +16,71 @@
   top: 8px;
   left: 8px;
   display: flex;
+  align-items: flex-start;
   gap: 12px;
   padding: 6px 10px;
   background: rgba(0, 0, 0, 0.45);
   border: 2px solid #888;
 }
 
-.hud-hearts { display: flex; gap: 2px; }
-.hud-heart {
-  width: 16px; height: 16px;
-  background: linear-gradient(#ff4040, #a00);
-  border: 1px solid #fff;
-  border-radius: 3px;
+.hud-hearts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  max-width: 140px;
 }
-.hud-heart.empty { background: #222; }
-.hud-heart.half { background: linear-gradient(to right, #ff4040 50%, #222 50%); }
 
-.hud-magic-bar { width: 80px; height: 12px; background: #222; border: 1px solid #fff; }
-.hud-magic-fill { height: 100%; background: linear-gradient(#40c0ff, #2050a0); }
+.hud-heart-icon {
+  width: 21px;
+  height: 21px;
+  image-rendering: pixelated;
+}
+
+.hud-magic-container {
+  position: relative;
+  width: 48px;
+  height: 126px;
+}
+
+.hud-magic-bg {
+  width: 48px;
+  height: 126px;
+  image-rendering: pixelated;
+}
+
+.hud-magic-fill {
+  position: absolute;
+  bottom: 3px;
+  left: 5px;
+  width: 38px;
+  background: #00cc44;
+}
+
+.hud-weapon-box-container {
+  position: relative;
+  width: 66px;
+  height: 66px;
+}
+
+.hud-weapon-box-bg {
+  width: 66px;
+  height: 66px;
+  image-rendering: pixelated;
+}
+
+.hud-weapon-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
 
 .hud-counters { display: flex; gap: 12px; align-items: center; }
 .hud-counter { display: flex; align-items: center; gap: 4px; font-size: 14px; }
-
-.hud-weapon {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 8px 16px;
-  background: rgba(0, 0, 0, 0.55);
-  border: 2px solid #888;
-  font-size: 18px;
-  text-align: center;
-}
 
 .hud-prompt {
   position: absolute;
