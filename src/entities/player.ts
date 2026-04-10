@@ -18,6 +18,7 @@ export class Player extends Entity {
   maxArrows = 30;
   bombs = 5;
   maxBombs = 15;
+  rupees = 0;
   hasSmallKey = false;
   unlockedWeapons = new Set<number>([0, 1, 2, 3]);
   currentWeapon = 0;
@@ -61,11 +62,26 @@ export class Player extends Entity {
       case 'magic_jar':
         this.magic = Math.min(this.maxMagic, this.magic + 8);
         break;
+      case 'arrows_5':
+        this.arrows = Math.min(this.maxArrows, this.arrows + 5);
+        break;
       case 'arrows_10':
         this.arrows = Math.min(this.maxArrows, this.arrows + 10);
         break;
-      case 'bombs_5':
-        this.bombs = Math.min(this.maxBombs, this.bombs + 5);
+      case 'bombs_4':
+        this.bombs = Math.min(this.maxBombs, this.bombs + 4);
+        break;
+      case 'bombs_8':
+        this.bombs = Math.min(this.maxBombs, this.bombs + 8);
+        break;
+      case 'rupee_1':
+        this.rupees += 1;
+        break;
+      case 'rupee_5':
+        this.rupees += 5;
+        break;
+      case 'rupee_10':
+        this.rupees += 10;
         break;
       case 'small_key':
         this.hasSmallKey = true;

@@ -7,6 +7,7 @@ import { Pickup } from './entities/pickup';
 import { Door } from './entities/door';
 import { Decoration } from './entities/decoration';
 import { DecorationRenderer } from './render/decoration-render';
+import { PickupRenderer } from './render/pickup-render';
 import { Weapon } from './weapons/weapon';
 import { Sword } from './weapons/sword';
 import { Bow } from './weapons/bow';
@@ -22,7 +23,7 @@ import { Cell } from './level/cell';
 import { makeAABB, aabbOverlaps } from './math/aabb';
 import { fromYaw } from './math/vec2';
 import { buildLevelMesh, LevelMesh, LevelTextures } from './render/level-mesh';
-import { loadTexture, loadTextureColorKeyed, sliceSpriteStrip, loadImageColorKeyed, sliceByRects } from './render/sprite-atlas';
+import { loadTexture, loadTextureColorKeyed, sliceSpriteStrip, loadImageColorKeyed, sliceByRects, autoSliceSpriteStrip } from './render/sprite-atlas';
 import { BillboardManager, KnightTextures } from './render/billboard';
 import { ProjectileRenderer } from './render/projectile-render';
 import { DoorRenderer } from './render/door-render';
@@ -57,6 +58,9 @@ export class Game {
   private arrowStuckTex!: THREE.Texture;
   private fireFrames!: THREE.Texture[];
   private decorationRenderer!: DecorationRenderer;
+  private pickupRenderer!: PickupRenderer;
+  private pickupTexMap!: Map<string, THREE.Texture>;
+  private pickupAnimMap!: Map<string, THREE.Texture[]>;
   private lastTime = 0;
   private dead = false;
   private won = false;
@@ -141,6 +145,33 @@ export class Game {
     this.arrowTex = arrowTex;
     this.arrowStuckTex = arrowStuckTex;
     this.fireFrames = [fireTex1, fireTex2];
+
+    // Static pickup textures
+    const pickupTexEntries = await Promise.all([
+      loadTextureColorKeyed('sprites/pickups_heart.png').then(t => ['heart', t] as const),
+      loadTextureColorKeyed('sprites/pickups_small_key.png').then(t => ['small_key', t] as const),
+      loadTextureColorKeyed('sprites/pickups_arrows_5.png').then(t => ['arrows_5', t] as const),
+      loadTextureColorKeyed('sprites/pickups_arrows_10.png').then(t => ['arrows_10', t] as const),
+      loadTextureColorKeyed('sprites/pickups_bombs_4.png').then(t => ['bombs_4', t] as const),
+      loadTextureColorKeyed('sprites/pickups_bombs_8.png').then(t => ['bombs_8', t] as const),
+      loadTextureColorKeyed('sprites/pickups_magic_jar_small.png').then(t => ['magic_jar', t] as const),
+    ]);
+    const pickupTexMap = new Map<string, THREE.Texture>(pickupTexEntries);
+
+    // Animated rupee textures (3-frame strips)
+    const [rupee1Canvas, rupee5Canvas, rupee10Canvas] = await Promise.all([
+      loadImageColorKeyed('sprites/pickups_rupee_1.png'),
+      loadImageColorKeyed('sprites/pickups_rupee_5.png'),
+      loadImageColorKeyed('sprites/pickups_rupee_10.png'),
+    ]);
+    const pickupAnimMap = new Map<string, THREE.Texture[]>();
+    pickupAnimMap.set('rupee_1', autoSliceSpriteStrip(rupee1Canvas));
+    pickupAnimMap.set('rupee_5', autoSliceSpriteStrip(rupee5Canvas));
+    pickupAnimMap.set('rupee_10', autoSliceSpriteStrip(rupee10Canvas));
+
+    this.pickupTexMap = pickupTexMap;
+    this.pickupAnimMap = pickupAnimMap;
+
     this.hud.loadHudSprites();
     this.loadLevel();
     requestAnimationFrame((t) => this.tick(t));
@@ -201,9 +232,11 @@ export class Game {
     this.billboards = new BillboardManager(this.renderer.scene, this.knightTextures, this.deathEffectFrames);
     this.projectileRenderer = new ProjectileRenderer(this.renderer.scene, this.bombAnimFrames, this.fireFrames, this.arrowTex, this.arrowStuckTex);
     this.doorRenderer = new DoorRenderer(this.renderer.scene, this.doorTexture);
+    this.pickupRenderer = new PickupRenderer(this.renderer.scene, this.pickupTexMap, this.pickupAnimMap);
     for (const e of this.world.entities) {
       if (e instanceof Enemy) this.billboards.add(e);
       if (e instanceof Door) this.doorRenderer.add(e, this.level.grid, this.level.gridSize);
+      if (e instanceof Pickup) this.pickupRenderer.add(e);
     }
 
     this.dead = false;
@@ -239,6 +272,7 @@ export class Game {
     }
 
     this.world.removeDead();
+    this.pickupRenderer.removeDead();
 
     if (needMeshRebuild && this.levelMesh) {
       this.renderer.scene.remove(this.levelMesh.walls);
@@ -392,6 +426,7 @@ export class Game {
     this.renderer.setCamera(this.player.position, this.player.yaw, this.player.pitch, PLAYER_EYE_HEIGHT + bobOffset);
     this.billboards.update(dt, this.renderer.camera);
     this.doorRenderer.update();
+    this.pickupRenderer.update(dt);
     const promptVisible = !!this.world
       .overlapCircle(this.player.position, 1.5)
       .find((e) => e instanceof Door);

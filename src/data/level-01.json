@@ -74,12 +74,16 @@
       { "type": "small_key", "x": 4, "z": 19 },
       { "type": "arrows_10", "x": 18, "z": 3 },
       { "type": "arrows_10", "x": 6, "z": 9 },
-      { "type": "bombs_5", "x": 12, "z": 14 },
-      { "type": "bombs_5", "x": 16, "z": 14 },
+      { "type": "bombs_4", "x": 12, "z": 14 },
+      { "type": "bombs_4", "x": 16, "z": 14 },
       { "type": "magic_jar", "x": 20, "z": 19 },
       { "type": "heart", "x": 4, "z": 9 },
       { "type": "heart", "x": 4, "z": 14 },
-      { "type": "heart_large", "x": 28, "z": 28 }
+      { "type": "heart_large", "x": 28, "z": 28 },
+      { "type": "rupee_1", "x": 6, "z": 3 },
+      { "type": "rupee_1", "x": 7, "z": 3 },
+      { "type": "rupee_5", "x": 15, "z": 9 },
+      { "type": "rupee_10", "x": 25, "z": 18 }
     ]
   },
   "ambient": {

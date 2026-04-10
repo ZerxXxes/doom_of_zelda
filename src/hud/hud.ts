@@ -168,7 +168,7 @@ export class Hud {
     const magicPct = player.magic / player.maxMagic;
     this.magicFillEl.style.height = `${Math.round(magicPct * 102)}px`;
 
-    this.rupeeEl.textContent = '0'; // rupees not tracked yet
+    this.rupeeEl.textContent = String(player.rupees);
     this.bombEl.textContent = String(player.bombs);
     this.arrowEl.textContent = String(player.arrows);
     this.keyEl.textContent = player.hasSmallKey ? '1' : '0';

@@ -98,10 +98,16 @@ describe('Player.applyPickup', () => {
     expect(p.arrows).toBe(20);
   });
 
-  it('bombs_5 adds 5 bombs up to max', () => {
+  it('bombs_4 adds 4 bombs up to max', () => {
     const p = newPlayer();
-    p.applyPickup('bombs_5');
-    expect(p.bombs).toBe(10);
+    p.applyPickup('bombs_4');
+    expect(p.bombs).toBe(9);
+  });
+
+  it('rupee_1 adds 1 rupee', () => {
+    const p = newPlayer();
+    p.applyPickup('rupee_1');
+    expect(p.rupees).toBe(1);
   });
 
   it('small_key sets hasSmallKey', () => {
