@@ -34,17 +34,17 @@ function colorKeyToDataURL(url: string, keyR = 255, keyG = 0, keyB = 255, tolera
 }
 
 const WEAPON_BASE_TRANSFORMS = [
-  'translateX(-50%) rotate(35deg)',    // sword — tilted right
-  'translateX(-50%) rotate(15deg)',    // bow — slight tilt
-  'translateX(-50%) rotate(0deg)',     // bomb — upright
-  'translateX(-50%) rotate(20deg)',    // fire rod — moderate tilt
+  'translateX(-50%) rotate(35deg) scale(1.6)',    // sword — bigger + tilted right
+  'translateX(-50%) rotate(15deg) scale(1.5)',    // bow — bigger + slight tilt
+  'translateX(-50%) rotate(0deg)',                 // bomb — normal size
+  'translateX(-50%) rotate(20deg) scale(1.5)',    // fire rod — bigger + tilt
 ];
 
 const WEAPON_ATTACK_TRANSFORMS = [
-  'translateX(-70%) rotate(-25deg)',   // sword — swings left (slash)
-  'translateX(-50%) rotate(15deg) translateY(20px)',  // bow — pulls down (draw)
-  'translateX(-50%) rotate(0deg) translateY(-50px)',  // bomb — tosses up
-  'translateX(-40%) rotate(10deg) scale(1.15)',       // fire rod — jabs forward
+  'translateX(-70%) rotate(-25deg) scale(1.6)',              // sword — swings left
+  'translateX(-50%) rotate(15deg) scale(1.5) translateY(30px)',  // bow — pulls back
+  'translateX(-50%) rotate(0deg) translateY(-50px)',          // bomb — tosses up
+  'translateX(-40%) rotate(10deg) scale(1.65)',               // fire rod — jabs forward
 ];
 
 export class Hud {
@@ -65,6 +65,8 @@ export class Hud {
   private attackTimer = 0;
   private currentAttackWeapon = -1;
   private weaponImages: string[] = [];
+  private bowEmptyImage = '';
+  private bowReloadTimer = 0;
 
   constructor() {
     this.root = document.getElementById('hud-root')!;
@@ -126,10 +128,17 @@ export class Hud {
       }
     }
 
+    // Bow reload timer: show empty bow after firing, then swap back
+    if (this.bowReloadTimer > 0) {
+      this.bowReloadTimer -= dt;
+    }
+
     // Viewmodel: set weapon image and transform
     if (this.weaponImages.length > 0) {
       const idx = player.currentWeapon;
-      this.viewmodelEl.style.backgroundImage = `url(${this.weaponImages[idx]})`;
+      // Show empty bow sprite while reloading, normal sprite otherwise
+      const useBowEmpty = idx === 1 && this.bowReloadTimer > 0 && this.attackTimer <= 0 && this.bowEmptyImage;
+      this.viewmodelEl.style.backgroundImage = `url(${useBowEmpty ? this.bowEmptyImage : this.weaponImages[idx]})`;
       this.viewmodelEl.style.backgroundSize = 'contain';
       this.viewmodelEl.style.backgroundRepeat = 'no-repeat';
       this.viewmodelEl.style.backgroundPosition = 'center bottom';
@@ -157,9 +166,13 @@ export class Hud {
   }
 
   triggerAttack(weaponSlot: number): void {
-    this.attackTimer = 0.15; // duration of the attack swing
+    this.attackTimer = 0.15;
     this.currentAttackWeapon = weaponSlot;
     this.viewmodelEl.style.transform = WEAPON_ATTACK_TRANSFORMS[weaponSlot] ?? WEAPON_ATTACK_TRANSFORMS[0];
+    // Bow: after the pull-back, show empty bow for a reload period
+    if (weaponSlot === 1) {
+      this.bowReloadTimer = 0.5;
+    }
   }
 
   showLocked(): void {
@@ -218,6 +231,7 @@ export class Hud {
       'sprites/weapon_fire_rod.png',
     ];
     this.weaponImages = await Promise.all(urls.map((url) => colorKeyToDataURL(url)));
+    this.bowEmptyImage = await colorKeyToDataURL('sprites/weapon_bow_empty.png');
   }
 
   private renderHearts(health: number, maxHealth: number): void {
