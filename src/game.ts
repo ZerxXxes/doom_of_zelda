@@ -23,7 +23,7 @@ import { Cell } from './level/cell';
 import { makeAABB, aabbOverlaps } from './math/aabb';
 import { fromYaw } from './math/vec2';
 import { buildLevelMesh, LevelMesh, LevelTextures } from './render/level-mesh';
-import { loadTexture, loadTextureColorKeyed, sliceSpriteStrip, loadImageColorKeyed, sliceByRects, autoSliceSpriteStrip } from './render/sprite-atlas';
+import { loadTexture, loadTextureColorKeyed, sliceSpriteStrip, loadImageColorKeyed, sliceByRects, autoSliceSpriteStrip, normalizeFrames } from './render/sprite-atlas';
 import { BillboardManager, KnightTextures } from './render/billboard';
 import { ProjectileRenderer } from './render/projectile-render';
 import { DoorRenderer } from './render/door-render';
@@ -102,11 +102,16 @@ export class Game {
       flipped.needsUpdate = true;
       return flipped;
     }
+    // Normalize frames to consistent canvas size per facing (bottom-aligned)
+    // so the knight doesn't stretch when the sword changes the sprite height
+    const normFront = normalizeFrames([f1, f2, f3, f4]);
+    const normSide = normalizeFrames([s1, s2, s3]);
+    const normBack = normalizeFrames([b1, b2, b3, b4]);
     this.knightTextures = {
-      frontFrames: [f1, f2, f3, f4],
-      sideLeftFrames: [s1, s2, s3],
-      sideRightFrames: [s1, s2, s3].map(flipTexture),
-      backFrames: [b1, b2, b3, b4],
+      frontFrames: normFront,
+      sideLeftFrames: normSide,
+      sideRightFrames: normSide.map(flipTexture),
+      backFrames: normBack,
     };
     const deathStripTex = await loadTexture('sprites/Enemy Death Effects.png');
     this.deathEffectFrames = sliceSpriteStrip(deathStripTex, 7);

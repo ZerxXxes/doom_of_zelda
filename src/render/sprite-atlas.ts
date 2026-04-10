@@ -244,6 +244,39 @@ export function sliceByRects(
   });
 }
 
+/**
+ * Normalize an array of textures to the same canvas size (max width × max height).
+ * Each frame is bottom-center aligned so the character's feet stay fixed
+ * while the sword/weapon moves in the extra space above.
+ */
+export function normalizeFrames(textures: THREE.Texture[]): THREE.Texture[] {
+  let maxW = 0;
+  let maxH = 0;
+  for (const tex of textures) {
+    const img = tex.image as HTMLCanvasElement | HTMLImageElement;
+    maxW = Math.max(maxW, img.width);
+    maxH = Math.max(maxH, img.height);
+  }
+  return textures.map((tex) => {
+    const img = tex.image as HTMLCanvasElement | HTMLImageElement;
+    if (img.width === maxW && img.height === maxH) return tex;
+    const canvas = document.createElement('canvas');
+    canvas.width = maxW;
+    canvas.height = maxH;
+    const ctx = canvas.getContext('2d')!;
+    // Bottom-center aligned: extra space goes above the sprite
+    const offsetX = Math.floor((maxW - img.width) / 2);
+    const offsetY = maxH - img.height;
+    ctx.drawImage(img, offsetX, offsetY);
+    const newTex = new THREE.CanvasTexture(canvas);
+    newTex.magFilter = THREE.NearestFilter;
+    newTex.minFilter = THREE.NearestFilter;
+    newTex.generateMipmaps = false;
+    newTex.colorSpace = THREE.SRGBColorSpace;
+    return newTex;
+  });
+}
+
 export function frameToUV(frame: SpriteFrame, atlasW: number, atlasH: number): { u: number; v: number; w: number; h: number } {
   return {
     u: frame.u / atlasW,
