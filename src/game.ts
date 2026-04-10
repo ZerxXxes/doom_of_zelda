@@ -340,7 +340,7 @@ export class Game {
     }
 
     if (this.input.isDown('KeyE')) {
-      const nearby = this.world.overlapCircle(this.player.position, 1.5);
+      const nearby = this.world.overlapCircle(this.player.position, 3.0);
       const door = nearby.find((e) => e instanceof Door) as Door | undefined;
       if (door) {
         const result = door.tryOpen(this.player, this.world);
