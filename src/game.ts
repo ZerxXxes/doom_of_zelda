@@ -155,6 +155,8 @@ export class Game {
       loadTextureColorKeyed('sprites/pickups_bombs_4.png').then(t => ['bombs_4', t] as const),
       loadTextureColorKeyed('sprites/pickups_bombs_8.png').then(t => ['bombs_8', t] as const),
       loadTextureColorKeyed('sprites/pickups_magic_jar_small.png').then(t => ['magic_jar', t] as const),
+      loadTextureColorKeyed('sprites/pickups_weapon_bow.png').then(t => ['weapon_bow', t] as const),
+      loadTextureColorKeyed('sprites/pickups_weapon_firerod.png').then(t => ['weapon_fire_rod', t] as const),
     ]);
     const pickupTexMap = new Map<string, THREE.Texture>(pickupTexEntries);
 
