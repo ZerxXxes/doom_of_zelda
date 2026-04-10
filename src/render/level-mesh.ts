@@ -129,13 +129,13 @@ export function buildLevelMesh(level: Level, textures: LevelTextures): LevelMesh
           1, wallVRepeat, BASEBOARD_V,
         );
         wallVertexCount += 4;
-        // Baseboard: extends -X into the room
+        // Baseboard: extends -X into the room (winding for +Y normal)
         pushQuad(
           wallPositions, wallUVs, wallIndices, wallVertexCount,
-          [(x + 1) * cs - boardWidth, BASEBOARD_Y, (z + 1) * cs],
           [(x + 1) * cs - boardWidth, BASEBOARD_Y, z * cs],
-          [(x + 1) * cs,              BASEBOARD_Y, z * cs],
+          [(x + 1) * cs - boardWidth, BASEBOARD_Y, (z + 1) * cs],
           [(x + 1) * cs,              BASEBOARD_Y, (z + 1) * cs],
+          [(x + 1) * cs,              BASEBOARD_Y, z * cs],
           1, BASEBOARD_V,
         );
         wallVertexCount += 4;
