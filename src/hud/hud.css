@@ -116,6 +116,21 @@
   font-size: 14px;
 }
 
+.hud-pickup-notice {
+  position: absolute;
+  bottom: 160px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 14px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid #aaa;
+  font-size: 16px;
+  color: #ffdd44;
+  text-shadow: 1px 1px 0 #000;
+  white-space: nowrap;
+  transition: opacity 0.5s ease-out;
+}
+
 .hud-locked-flash {
   position: absolute;
   top: 50%;

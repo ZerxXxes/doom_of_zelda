@@ -369,6 +369,23 @@ export class Game {
       if (e instanceof Pickup && aabbOverlaps(e.getAABB(), this.player.getAABB())) {
         const pickupType = e.pickupType;
         e.onTouch(this.player);
+        const pickupNames: Record<string, string> = {
+          heart: '+1 Heart',
+          heart_large: 'Full Health!',
+          magic_jar: '+Magic',
+          arrows_5: '+5 Arrows',
+          arrows_10: '+10 Arrows',
+          bombs_4: '+4 Bombs',
+          bombs_8: '+8 Bombs',
+          small_key: 'Small Key',
+          rupee_1: '+1 Rupee',
+          rupee_5: '+5 Rupees',
+          rupee_10: '+10 Rupees',
+          weapon_bow: 'Got the Bow!',
+          weapon_bombs: 'Got Bombs!',
+          weapon_fire_rod: 'Got the Fire Rod!',
+        };
+        this.hud.showPickupNotice(pickupNames[pickupType] ?? pickupType);
         if (pickupType === 'small_key') {
           playSound('pickup_key');
         } else if (pickupType === 'magic_jar') {

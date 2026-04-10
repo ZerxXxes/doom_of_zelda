@@ -64,6 +64,8 @@ export class Hud {
   private vignetteEl: HTMLElement;
   private diedEl: HTMLElement | null = null;
   private wonEl: HTMLElement | null = null;
+  private pickupNoticeEl: HTMLElement;
+  private pickupNoticeTimer = 0;
   private lockedFlashTimer = 0;
   private attackTimer = 0;
   private currentAttackWeapon = -1;
@@ -153,11 +155,14 @@ export class Hud {
     this.lockedFlashEl = el('div', 'hud-locked-flash', 'LOCKED');
     this.lockedFlashEl.style.display = 'none';
     this.vignetteEl = el('div', 'hud-damage-vignette');
+    this.pickupNoticeEl = el('div', 'hud-pickup-notice');
+    this.pickupNoticeEl.style.display = 'none';
 
     this.root.appendChild(bar);
     this.root.appendChild(this.viewmodelEl);
     this.root.appendChild(this.promptEl);
     this.root.appendChild(this.lockedFlashEl);
+    this.root.appendChild(this.pickupNoticeEl);
     this.root.appendChild(this.vignetteEl);
   }
 
@@ -175,6 +180,18 @@ export class Hud {
 
     if (this.weaponIconUrls.length > 0) {
       this.weaponIconEl.src = this.weaponIconUrls[player.currentWeapon];
+    }
+
+    // Pickup notice fade
+    if (this.pickupNoticeTimer > 0) {
+      this.pickupNoticeTimer -= dt;
+      if (this.pickupNoticeTimer <= 0) {
+        this.pickupNoticeEl.style.opacity = '0';
+        // Hide after fade transition completes
+        setTimeout(() => {
+          if (this.pickupNoticeTimer <= 0) this.pickupNoticeEl.style.display = 'none';
+        }, 500);
+      }
     }
 
     // Attack animation timer
@@ -221,6 +238,13 @@ export class Hud {
     } else {
       this.vignetteEl.classList.remove('flash');
     }
+  }
+
+  showPickupNotice(text: string): void {
+    this.pickupNoticeEl.textContent = text;
+    this.pickupNoticeEl.style.display = 'block';
+    this.pickupNoticeEl.style.opacity = '1';
+    this.pickupNoticeTimer = 1.5;
   }
 
   triggerAttack(weaponSlot: number): void {
