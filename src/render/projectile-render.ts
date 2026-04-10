@@ -5,7 +5,9 @@ import { World } from '../entities/world';
 export class ProjectileRenderer {
   private bombVisuals = new Map<Bomb, THREE.Sprite>();
   private fireVisuals = new Map<FireBolt, THREE.Sprite>();
-  private arrowVisuals = new Map<Arrow, THREE.Sprite>();
+  private arrowSprites = new Map<Arrow, THREE.Sprite>();
+  private arrowStuckMeshes = new Map<Arrow, THREE.Mesh>();
+  private arrowStuckGeo = new THREE.PlaneGeometry(0.4, 0.6);
   private bombFrames: THREE.Texture[];
   private fireFrames: THREE.Texture[];
   private arrowTex: THREE.Texture;
@@ -49,7 +51,7 @@ export class ProjectileRenderer {
         this.scene.add(sprite);
         this.fireVisuals.set(e, sprite);
       }
-      if (e instanceof Arrow && !this.arrowVisuals.has(e)) {
+      if (e instanceof Arrow && !this.arrowSprites.has(e) && !this.arrowStuckMeshes.has(e)) {
         const mat = new THREE.SpriteMaterial({
           map: this.arrowTex,
           transparent: true,
@@ -58,7 +60,7 @@ export class ProjectileRenderer {
         const sprite = new THREE.Sprite(mat);
         sprite.scale.set(0.4, 0.8, 1);
         this.scene.add(sprite);
-        this.arrowVisuals.set(e, sprite);
+        this.arrowSprites.set(e, sprite);
       }
     }
 
@@ -108,18 +110,34 @@ export class ProjectileRenderer {
       mat.needsUpdate = true;
     }
 
-    // Update arrows — rotate sprite so arrowhead points in flight direction on screen
+    // Update flying arrows — billboard sprite with screen-space rotation
     const _arrowPos = new THREE.Vector3();
     const _tipPos = new THREE.Vector3();
-    for (const [a, sprite] of this.arrowVisuals) {
-      sprite.position.set(a.position.x, 1.0, a.position.z);
-      const mat = sprite.material as THREE.SpriteMaterial;
-      if (a.stuck && mat.map !== this.arrowStuckTex) {
-        mat.map = this.arrowStuckTex;
-        mat.needsUpdate = true;
-        sprite.scale.set(0.4, 0.6, 1);
+    for (const [a, sprite] of this.arrowSprites) {
+      if (a.stuck) {
+        // Transition: remove sprite, create fixed mesh
+        this.scene.remove(sprite);
+        sprite.material.dispose();
+        this.arrowSprites.delete(a);
+
+        const mat = new THREE.MeshBasicMaterial({
+          map: this.arrowStuckTex,
+          transparent: true,
+          side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(this.arrowStuckGeo, mat);
+        mesh.position.set(a.position.x, 1.0, a.position.z);
+        // Orient: plane faces -flightDir (toward where the arrow came from)
+        // then tilt so the arrow tip points horizontally into the wall
+        mesh.rotation.order = 'YZX';
+        mesh.rotation.y = Math.atan2(-a.flightDir.x, -a.flightDir.z);
+        mesh.rotation.z = Math.PI / 2; // tip points into the wall (horizontal)
+        this.scene.add(mesh);
+        this.arrowStuckMeshes.set(a, mesh);
+        continue;
       }
-      // Project flight direction onto screen to compute sprite rotation
+      // Flying: update position + screen-space rotation
+      sprite.position.set(a.position.x, 1.0, a.position.z);
       _arrowPos.set(a.position.x, 1.0, a.position.z).project(camera);
       _tipPos.set(
         a.position.x + a.flightDir.x * 0.5,
@@ -128,7 +146,7 @@ export class ProjectileRenderer {
       ).project(camera);
       const dx = _tipPos.x - _arrowPos.x;
       const dy = _tipPos.y - _arrowPos.y;
-      // Arrow image has tip at top (screen +Y = angle π/2 from +X)
+      const mat = sprite.material as THREE.SpriteMaterial;
       mat.rotation = Math.atan2(dy, dx) - Math.PI / 2;
     }
 
@@ -147,11 +165,18 @@ export class ProjectileRenderer {
         this.fireVisuals.delete(f);
       }
     }
-    for (const [a, sprite] of this.arrowVisuals) {
+    for (const [a, sprite] of this.arrowSprites) {
       if (!a.alive) {
         this.scene.remove(sprite);
         sprite.material.dispose();
-        this.arrowVisuals.delete(a);
+        this.arrowSprites.delete(a);
+      }
+    }
+    for (const [a, mesh] of this.arrowStuckMeshes) {
+      if (!a.alive) {
+        this.scene.remove(mesh);
+        (mesh.material as THREE.Material).dispose();
+        this.arrowStuckMeshes.delete(a);
       }
     }
   }

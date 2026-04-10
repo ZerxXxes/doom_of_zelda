@@ -149,8 +149,8 @@ export class Arrow extends Entity {
       const len = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
       if (len > 0) {
         this.position = {
-          x: this.position.x - (this.velocity.x / len) * 0.2,
-          z: this.position.z - (this.velocity.z / len) * 0.2,
+          x: this.position.x - (this.velocity.x / len) * 0.5,
+          z: this.position.z - (this.velocity.z / len) * 0.5,
         };
       }
       this.stuck = true;
